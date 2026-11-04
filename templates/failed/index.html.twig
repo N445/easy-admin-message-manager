@@ -1,0 +1,12 @@
+{% extends '@EasyAdminMessengerManager/layout.html.twig' %}
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+
+{% block eamm_title %}{{ 'eamm.tab.failed'|trans }}{% endblock %}
+
+{% block eamm_content %}
+    {{ component('EAMM:FailedMessages', {
+        controller: eamm_controller,
+        dashboard: eamm_dashboard,
+        perPage: per_page,
+    }) }}
+{% endblock %}

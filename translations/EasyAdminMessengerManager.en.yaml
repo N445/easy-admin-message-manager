@@ -1,0 +1,98 @@
+eamm:
+    tab:
+        messages: Messages
+        overview: Overview
+        failed: Failed messages
+        history: History
+    overview:
+        title: Messenger
+        transports: Transports
+        failure: failure
+        see_failed: See failed messages
+        browse: Browse pending messages
+        not_listable: Not listable
+        failed_title: 'Failed messages (%count%)'
+        live: 'Refreshed every %seconds% s'
+        last_24h: Last 24 hours
+    breakdown:
+        sampled: 'Computed on the %count% most recent of %total% messages.'
+        by_class: By message class
+        by_exception: By exception
+        by_origin: By original transport
+    failed:
+        title: 'Failed messages (%count%)'
+        empty: No failed message.
+        undecodable: undecodable
+        undecodable_help: This message cannot be decoded anymore (its class was probably renamed or removed). It cannot be retried, only removed.
+        confirm_retry: Retry this message now? Its handler will run again, side effects included.
+        confirm_remove: Remove this message permanently?
+    batch:
+        selection: 'Selection:'
+        select_page: Select page
+        clear_selection: Clear selection
+        requeue_selected: Send back to queue
+        remove_selected: Remove
+        all_matching: 'All %count% matching messages:'
+        requeue_all: Send all back to queue
+        remove_all: Remove all
+        confirm_requeue: Send the selected messages back to their original queue?
+        confirm_remove: Remove the selected messages permanently?
+        confirm_requeue_all: 'Send the %count% matching messages back to their original queue?'
+        confirm_remove_all: 'Remove the %count% matching messages permanently?'
+    action:
+        retry: Retry
+        remove: Remove
+    filter:
+        from: From
+        to: To
+        apply: Filter
+        reset: Reset
+    show:
+        trace: Stack trace
+        payload: Message
+        stamps: Stamps
+    json:
+        search: Search (Enter for next match)
+        expand: Expand all
+        collapse: Collapse all
+        copy: Copy JSON
+        copied: Copied!
+    messages:
+        no_transport: No listable transport.
+        refresh: Refresh
+        partial: 'This transport cannot be queried in SQL: only its first %count% messages are browsed and filtered.'
+    transport:
+        title: 'Transport %name%'
+        preview: 'First %limit% messages out of %count%.'
+        empty: No pending message.
+    history:
+        no_payload: The message content was not captured (history.capture_payload).
+        title: History
+        empty: No history entry.
+    status:
+        handled: Handled
+        retrying: Retrying
+        failed: Failed
+    column:
+        memory: Memory
+        id: Id
+        class: Message
+        error: Error
+        exception: Exception
+        origin: Original transport
+        transport: Transport
+        retries: Retries
+        failed_at: Failed at
+        total: Total
+        failures: Failures
+        avg_duration: Avg. duration
+        status: Status
+        handled_at: Date
+        attempt: Attempt
+        duration: Duration
+    pagination:
+        summary: 'Page %page% of %pages% (%total% messages)'
+    flash:
+        retried: The message was handled successfully.
+        removed: The message was removed.
+        batch: '%count% message(s) scheduled for processing.'

@@ -1,0 +1,12 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% if pagination.pages > 1 %}
+    <nav class="eamm-pagination" aria-label="pagination">
+        <span class="eamm-muted">{{ 'eamm.pagination.summary'|trans({'%page%': pagination.page, '%pages%': pagination.pages, '%total%': pagination.total}) }}</span>
+        <div class="d-flex gap-1">
+            {% for target in [1, pagination.page - 1, pagination.page, pagination.page + 1, pagination.pages]|filter(p => p >= 1 and p <= pagination.pages)|reduce((carry, p) => p in carry ? carry : carry|merge([p]), []) %}
+                <button type="button" class="btn btn-sm btn-secondary" {{ target == pagination.page ? 'aria-current="page"' }}
+                        data-action="live#action" data-live-action-param="goToPage" data-live-target-page-param="{{ target }}">{{ target }}</button>
+            {% endfor %}
+        </div>
+    </nav>
+{% endif %}

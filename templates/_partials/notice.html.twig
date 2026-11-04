@@ -1,0 +1,4 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% if notice %}
+    <div class="eamm-notice eamm-notice-{{ notice.type }}" role="status">{{ notice.message|trans(notice.parameters) }}</div>
+{% endif %}

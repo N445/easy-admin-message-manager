@@ -1,0 +1,16 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% set confirm = "if (!confirm(this.dataset.confirm)) { event.preventDefault(); event.stopImmediatePropagation(); }" %}
+<div {{ attributes }}>
+    {% include '@EasyAdminMessengerManager/_partials/notice.html.twig' %}
+    <div class="d-flex gap-2 mb-3">
+        <a class="btn btn-sm btn-secondary" href="{{ computed.listUrl }}">← {{ 'eamm.tab.failed'|trans }}</a>
+        {% if is_granted('EAMM_RETRY') and decodable %}
+            <button type="button" class="btn btn-sm btn-primary" data-confirm="{{ 'eamm.failed.confirm_retry'|trans }}" onclick="{{ confirm }}"
+                    data-action="live#action" data-live-action-param="retry">{{ 'eamm.action.retry'|trans }}</button>
+        {% endif %}
+        {% if is_granted('EAMM_REMOVE') %}
+            <button type="button" class="btn btn-sm btn-danger" data-confirm="{{ 'eamm.failed.confirm_remove'|trans }}" onclick="{{ confirm }}"
+                    data-action="live#action" data-live-action-param="remove">{{ 'eamm.action.remove'|trans }}</button>
+        {% endif %}
+    </div>
+</div>

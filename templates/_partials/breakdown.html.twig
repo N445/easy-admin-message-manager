@@ -1,0 +1,27 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% if breakdown.byClass is not empty %}
+    {% if total is defined and total > sample_size %}
+        <p class="eamm-muted">{{ 'eamm.breakdown.sampled'|trans({'%count%': sample_size, '%total%': total}) }}</p>
+    {% endif %}
+    <div class="eamm-breakdown">
+        {% for column in [
+            {title: 'eamm.breakdown.by_class', counts: breakdown.byClass, filter: 'class'},
+            {title: 'eamm.breakdown.by_exception', counts: breakdown.byException, filter: 'exception'},
+            {title: 'eamm.breakdown.by_origin', counts: breakdown.byOrigin, filter: 'origin'},
+        ] %}
+            <table class="table datagrid">
+                <thead><tr><th>{{ column.title|trans }}</th><th class="text-end">{{ 'eamm.column.total'|trans }}</th></tr></thead>
+                <tbody>
+                {% for key, count in column.counts|slice(0, 10, true) %}
+                    <tr>
+                        <td class="eamm-mono"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('failed').set(column.filter, key) }}">{{ key }}</a></td>
+                        <td class="text-end">{{ count }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="eamm-muted">{{ 'eamm.failed.empty'|trans }}</p>
+{% endif %}

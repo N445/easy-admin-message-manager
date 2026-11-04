@@ -1,0 +1,53 @@
+{
+    "name": "robin/easy-admin-messenger-manager",
+    "description": "Symfony Messenger manager for EasyAdmin: queues overview, failed messages, single and batch retry, optional history.",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": ["symfony", "messenger", "easyadmin", "failed messages", "retry", "dashboard"],
+    "require": {
+        "php": ">=8.4",
+        "doctrine/dbal": "^4.0",
+        "doctrine/doctrine-bundle": "^2.13 || ^3.0",
+        "doctrine/orm": "^3.3",
+        "easycorp/easyadmin-bundle": "^5.0",
+        "symfony/config": "^7.4 || ^8.0",
+        "symfony/console": "^7.4 || ^8.0",
+        "symfony/dependency-injection": "^7.4 || ^8.0",
+        "symfony/framework-bundle": "^7.4 || ^8.0",
+        "symfony/http-kernel": "^7.4 || ^8.0",
+        "symfony/messenger": "^7.4 || ^8.0",
+        "symfony/security-bundle": "^7.4 || ^8.0",
+        "symfony/string": "^7.4 || ^8.0",
+        "symfony/twig-bundle": "^7.4 || ^8.0",
+        "symfony/ux-live-component": "^2.30",
+        "symfony/ux-twig-component": "^2.30"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.4 || ^13.0",
+        "symfony/browser-kit": "^7.4 || ^8.0",
+        "symfony/css-selector": "^7.4 || ^8.0",
+        "symfony/doctrine-messenger": "^7.4 || ^8.0",
+        "symfony/dom-crawler": "^7.4 || ^8.0",
+        "symfony/yaml": "^7.4 || ^8.0",
+        "twig/extra-bundle": "^3.29",
+        "twig/html-extra": "^3.29"
+    },
+    "suggest": {
+        "symfony/doctrine-messenger": "Doctrine failure transport, listable from the dashboard",
+        "symfony/redis-messenger": "Redis transports are listable since Symfony 8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "EasyAdminMessengerManager\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "EasyAdminMessengerManager\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

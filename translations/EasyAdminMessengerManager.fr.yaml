@@ -1,0 +1,98 @@
+eamm:
+    tab:
+        messages: Messages
+        overview: Vue d'ensemble
+        failed: Messages en échec
+        history: Historique
+    overview:
+        title: Messenger
+        transports: Transports
+        failure: échecs
+        see_failed: Voir les messages en échec
+        browse: Parcourir les messages en attente
+        not_listable: Non listable
+        failed_title: 'Messages en échec (%count%)'
+        live: 'Actualisé toutes les %seconds% s'
+        last_24h: Dernières 24 heures
+    breakdown:
+        sampled: 'Calculé sur les %count% plus récents des %total% messages.'
+        by_class: Par classe de message
+        by_exception: Par exception
+        by_origin: Par transport d'origine
+    failed:
+        title: 'Messages en échec (%count%)'
+        empty: Aucun message en échec.
+        undecodable: illisible
+        undecodable_help: Ce message ne peut plus être décodé (sa classe a sans doute été renommée ou supprimée). Il ne peut pas être relancé, seulement supprimé.
+        confirm_retry: Relancer ce message maintenant ? Son handler sera réexécuté, effets de bord compris.
+        confirm_remove: Supprimer définitivement ce message ?
+    batch:
+        selection: 'Sélection :'
+        select_page: Sélectionner la page
+        clear_selection: Vider la sélection
+        requeue_selected: Renvoyer dans la file
+        remove_selected: Supprimer
+        all_matching: 'Les %count% messages correspondants :'
+        requeue_all: Tout renvoyer dans la file
+        remove_all: Tout supprimer
+        confirm_requeue: Renvoyer les messages sélectionnés dans leur file d'origine ?
+        confirm_remove: Supprimer définitivement les messages sélectionnés ?
+        confirm_requeue_all: 'Renvoyer les %count% messages correspondants dans leur file d''origine ?'
+        confirm_remove_all: 'Supprimer définitivement les %count% messages correspondants ?'
+    action:
+        retry: Relancer
+        remove: Supprimer
+    filter:
+        from: Du
+        to: Au
+        apply: Filtrer
+        reset: Réinitialiser
+    show:
+        trace: Trace
+        payload: Message
+        stamps: Stamps
+    json:
+        search: Rechercher (Entrée pour le suivant)
+        expand: Tout déplier
+        collapse: Tout replier
+        copy: Copier le JSON
+        copied: Copié !
+    messages:
+        no_transport: Aucun transport listable.
+        refresh: Rafraîchir
+        partial: 'Ce transport ne peut pas être interrogé en SQL : seuls ses %count% premiers messages sont parcourus et filtrés.'
+    transport:
+        title: 'Transport %name%'
+        preview: '%limit% premiers messages sur %count%.'
+        empty: Aucun message en attente.
+    history:
+        no_payload: Le contenu du message n'a pas été capturé (history.capture_payload).
+        title: Historique
+        empty: Aucune entrée d'historique.
+    status:
+        handled: Traité
+        retrying: En réessai
+        failed: Échoué
+    column:
+        memory: Mémoire
+        id: Id
+        class: Message
+        error: Erreur
+        exception: Exception
+        origin: Transport d'origine
+        transport: Transport
+        retries: Essais
+        failed_at: Échoué le
+        total: Total
+        failures: Échecs
+        avg_duration: Durée moy.
+        status: Statut
+        handled_at: Date
+        attempt: Essai
+        duration: Durée
+    pagination:
+        summary: 'Page %page% sur %pages% (%total% messages)'
+    flash:
+        retried: Le message a été traité avec succès.
+        removed: Le message a été supprimé.
+        batch: '%count% message(s) pris en charge.'

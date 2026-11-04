@@ -1,0 +1,12 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+<div class="eamm-json" data-eamm-json data-eamm-json-expand="{{ expand ?? '*' }}">
+    <div class="eamm-json-toolbar">
+        <input type="search" class="eamm-input" data-eamm-json-search placeholder="{{ 'eamm.json.search'|trans }}" aria-label="{{ 'eamm.json.search'|trans }}">
+        <button type="button" class="btn btn-sm btn-secondary" data-eamm-json-action="expand">{{ 'eamm.json.expand'|trans }}</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-eamm-json-action="collapse">{{ 'eamm.json.collapse'|trans }}</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-eamm-json-action="copy" data-copied-label="{{ 'eamm.json.copied'|trans }}">{{ 'eamm.json.copy'|trans }}</button>
+    </div>
+    <script type="application/json">{{ json|raw }}</script>
+    <json-viewer></json-viewer>
+    <noscript><pre class="eamm-trace">{{ json }}</pre></noscript>
+</div>

@@ -1,0 +1,76 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+<div {{ attributes }}>
+    {% set current = computed.currentTransport %}
+    <div class="eamm-pills" role="tablist">
+        {% for summary in computed.transports %}
+            <button type="button" role="tab" class="eamm-pill {{ summary.name == current ? 'is-active' }} {{ summary.failure ? 'is-failure' }}" aria-selected="{{ summary.name == current ? 'true' : 'false' }}"
+                    data-action="live#action" data-live-action-param="selectTransport" data-live-name-param="{{ summary.name }}">
+                {{ summary.name }} <span class="eamm-pill-count">{{ summary.count is null ? '?' : summary.count|number_format(0, '', ' ') }}</span>
+            </button>
+        {% else %}
+            <p class="eamm-muted">{{ 'eamm.messages.no_transport'|trans }}</p>
+        {% endfor %}
+    </div>
+
+    {% if current %}
+        <div class="eamm-filters">
+            <div>
+                <label for="eamm-class">{{ 'eamm.column.class'|trans }}</label>
+                <input class="eamm-input" id="eamm-class" data-model="debounce(400)|messageClass" value="{{ messageClass }}">
+            </div>
+            <div>
+                <label for="eamm-from">{{ 'eamm.filter.from'|trans }}</label>
+                <input class="eamm-input" type="date" id="eamm-from" data-model="from" value="{{ from }}">
+            </div>
+            <div>
+                <label for="eamm-to">{{ 'eamm.filter.to'|trans }}</label>
+                <input class="eamm-input" type="date" id="eamm-to" data-model="to" value="{{ to }}">
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" data-action="live#$render">{{ 'eamm.messages.refresh'|trans }}</button>
+        </div>
+
+        {% set pagination = computed.pagination %}
+        {% set views = computed.views %}
+
+        {% if not computed.complete %}
+            <div class="eamm-notice eamm-notice-warning">{{ 'eamm.messages.partial'|trans({'%count%': pagination.total|number_format(0, '', ' ')}) }}</div>
+        {% endif %}
+
+        <table class="table datagrid eamm-messages {{ views is empty ? 'datagrid-empty' }}">
+            <thead>
+                <tr>
+                    <th>{{ 'eamm.column.id'|trans }}</th>
+                    <th>{{ 'eamm.column.class'|trans }}</th>
+                    <th class="text-end">{{ 'eamm.column.retries'|trans }}</th>
+                    <th>{{ 'eamm.column.error'|trans }}</th>
+                    <th>{{ 'eamm.column.failed_at'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for view in views %}
+                <tr>
+                    <td class="eamm-mono"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id) }}">{{ view.id }}</a></td>
+                    <td>
+                        <a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id) }}" title="{{ view.messageClass }}">{{ view.shortClass }}</a>
+                        {% if not view.decodable %}<span class="badge badge-warning">{{ 'eamm.failed.undecodable'|trans }}</span>{% endif %}
+                    </td>
+                    <td class="text-end">{{ view.retryCount }}</td>
+                    <td>
+                        {% if view.exceptionClass %}
+                            <div class="eamm-mono">{{ view.exceptionClass }}</div>
+                            <div class="eamm-muted">{{ view.exceptionMessage|length > 140 ? view.exceptionMessage|slice(0, 140) ~ '…' : view.exceptionMessage }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">{{ view.failedAt ? view.failedAt|date('Y-m-d H:i:s') : '—' }}</td>
+                </tr>
+            {% else %}
+                <tr><td colspan="5" class="text-center eamm-muted py-4">{{ 'eamm.transport.empty'|trans }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if pagination %}
+            {% include '@EasyAdminMessengerManager/_partials/pagination.html.twig' %}
+        {% endif %}
+    {% endif %}
+</div>

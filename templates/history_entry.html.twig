@@ -1,0 +1,47 @@
+{% extends '@EasyAdminMessengerManager/layout.html.twig' %}
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+
+{% block head_javascript %}
+    {{ parent() }}
+    <script src="{{ asset('bundles/easyadminmessengermanager/vendor/json-viewer/json-viewer.bundle.js') }}" defer></script>
+    <script src="{{ asset('bundles/easyadminmessengermanager/eamm-json.js') }}" defer></script>
+{% endblock %}
+
+{% block eamm_title %}{{ entry.message_class|split('\\')|last }} <span class="eamm-muted">#{{ entry.id }}</span>{% endblock %}
+
+{% block eamm_content %}
+    {% set tones = {handled: 'success', retrying: 'warning', failed: 'danger'} %}
+    <div class="d-flex gap-2 mb-3">
+        <a class="btn btn-sm btn-secondary" href="{{ ea_url().setController(eamm_controller).setAction('history') }}">← {{ 'eamm.tab.history'|trans }}</a>
+    </div>
+
+    <table class="table datagrid">
+        <tbody>
+            <tr><th>{{ 'eamm.column.status'|trans }}</th><td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td></tr>
+            <tr><th>{{ 'eamm.column.class'|trans }}</th><td class="eamm-mono">{{ entry.message_class }}</td></tr>
+            <tr><th>{{ 'eamm.column.transport'|trans }}</th><td>{{ entry.transport }}</td></tr>
+            <tr><th>{{ 'eamm.column.handled_at'|trans }}</th><td>{{ entry.handled_at|date('Y-m-d H:i:s') }}</td></tr>
+            <tr><th>{{ 'eamm.column.attempt'|trans }}</th><td>{{ entry.attempt }}</td></tr>
+            <tr><th>{{ 'eamm.column.duration'|trans }}</th><td>{{ entry.duration_ms is null ? '—' : entry.duration_ms ~ ' ms' }}</td></tr>
+            <tr><th>{{ 'eamm.column.memory'|trans }}</th><td>{{ entry.memory_bytes is null ? '—' : (entry.memory_bytes / 1048576)|number_format(1) ~ ' MB' }}</td></tr>
+            {% if entry.error_class %}
+                <tr><th>{{ 'eamm.column.exception'|trans }}</th><td class="eamm-mono">{{ entry.error_class }}</td></tr>
+                <tr><th>{{ 'eamm.column.error'|trans }}</th><td>{{ entry.error_message }}</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    {% if entry.error_trace %}
+        <h2 class="eamm-section-title">{{ 'eamm.show.trace'|trans }}</h2>
+        <pre class="eamm-trace">{{ entry.error_trace }}</pre>
+    {% endif %}
+
+    <h2 class="eamm-section-title">{{ 'eamm.show.payload'|trans }}</h2>
+    {% if payload_is_json %}
+        {% include '@EasyAdminMessengerManager/_partials/json_viewer.html.twig' with {json: entry.payload} %}
+    {% elseif entry.payload %}
+        <pre class="eamm-trace">{{ entry.payload }}</pre>
+    {% else %}
+        <p class="eamm-muted">{{ 'eamm.history.no_payload'|trans }}</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends '@EasyAdminMessengerManager/layout.html.twig' %}
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+
+{% block eamm_title %}{{ 'eamm.tab.messages'|trans }}{% endblock %}
+
+{% block eamm_content %}
+    {{ component('EAMM:Messages', {
+        controller: eamm_controller,
+        dashboard: eamm_dashboard,
+        perPage: per_page,
+        hiddenTransports: hidden_transports,
+    }) }}
+{% endblock %}
