@@ -1,11 +1,13 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
 <div {{ attributes }}>
     {% set current = computed.currentTransport %}
-    <div class="eamm-pills" role="tablist">
+    {% include '@EasyAdminMessengerManager/_partials/notice.html.twig' %}
+    <div class="eamm-pills">
         {% for summary in computed.transports %}
-            <button type="button" role="tab" class="eamm-pill {{ summary.name == current ? 'is-active' }} {{ summary.failure ? 'is-failure' }}" aria-selected="{{ summary.name == current ? 'true' : 'false' }}"
+            {% set active = summary.name == current %}
+            <button type="button" class="eamm-pill {{ active ? 'is-active' }} {{ summary.failure ? 'is-failure' }}" aria-pressed="{{ active ? 'true' : 'false' }}" data-loading="addAttribute(disabled)"
                     data-action="live#action" data-live-action-param="selectTransport" data-live-name-param="{{ summary.name }}">
-                {{ summary.name }} <span class="eamm-pill-count">{{ summary.count is null ? '?' : summary.count|number_format(0, '', ' ') }}</span>
+                {{ summary.name }} <span class="eamm-pill-count">{{ summary.count is null ? '?' : summary.count|eamm_number }}</span>
             </button>
         {% else %}
             <p class="eamm-muted">{{ 'eamm.messages.no_transport'|trans }}</p>
@@ -16,58 +18,97 @@
         <div class="eamm-filters">
             <div>
                 <label for="eamm-class">{{ 'eamm.column.class'|trans }}</label>
-                <input class="eamm-input" id="eamm-class" data-model="debounce(400)|messageClass" value="{{ messageClass }}">
+                <input class="eamm-input" id="eamm-class" data-model="on(change)|messageClass" value="{{ messageClass }}">
             </div>
             <div>
                 <label for="eamm-from">{{ 'eamm.filter.from'|trans }}</label>
-                <input class="eamm-input" type="date" id="eamm-from" data-model="from" value="{{ from }}">
+                <input class="eamm-input" type="datetime-local" id="eamm-from" data-model="on(change)|from" value="{{ from }}">
             </div>
             <div>
                 <label for="eamm-to">{{ 'eamm.filter.to'|trans }}</label>
-                <input class="eamm-input" type="date" id="eamm-to" data-model="to" value="{{ to }}">
+                <input class="eamm-input" type="datetime-local" id="eamm-to" data-model="on(change)|to" value="{{ to }}">
             </div>
-            <button type="button" class="btn btn-sm btn-secondary" data-action="live#$render">{{ 'eamm.messages.refresh'|trans }}</button>
+            <button type="button" class="btn btn-sm btn-secondary" data-loading="addAttribute(disabled)" data-action="live#$render">{{ 'eamm.messages.refresh'|trans }}</button>
         </div>
 
         {% set pagination = computed.pagination %}
         {% set views = computed.views %}
+        {% set has_errors = computed.errors %}
+        {% set return_to = computed.returnTo %}
+        {% set can_remove = is_granted('EAMM_REMOVE') %}
+        {% set extra_columns = eamm_columns() %}
+        {% include '@EasyAdminMessengerManager/_partials/load_error.html.twig' %}
 
         {% if not computed.complete %}
-            <div class="eamm-notice eamm-notice-warning">{{ 'eamm.messages.partial'|trans({'%count%': pagination.total|number_format(0, '', ' ')}) }}</div>
+            {% include '@EasyAdminMessengerManager/_partials/notice.html.twig' with {notice: {type: 'warning', message: 'eamm.messages.partial', parameters: {'%count%': pagination.total|eamm_number}}, dismissible: false} %}
         {% endif %}
 
-        <table class="table datagrid eamm-messages {{ views is empty ? 'datagrid-empty' }}">
-            <thead>
-                <tr>
-                    <th>{{ 'eamm.column.id'|trans }}</th>
-                    <th>{{ 'eamm.column.class'|trans }}</th>
-                    <th class="text-end">{{ 'eamm.column.retries'|trans }}</th>
-                    <th>{{ 'eamm.column.error'|trans }}</th>
-                    <th>{{ 'eamm.column.failed_at'|trans }}</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for view in views %}
-                <tr>
-                    <td class="eamm-mono"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id) }}">{{ view.id }}</a></td>
-                    <td>
-                        <a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id) }}" title="{{ view.messageClass }}">{{ view.shortClass }}</a>
-                        {% if not view.decodable %}<span class="badge badge-warning">{{ 'eamm.failed.undecodable'|trans }}</span>{% endif %}
-                    </td>
-                    <td class="text-end">{{ view.retryCount }}</td>
-                    <td>
-                        {% if view.exceptionClass %}
-                            <div class="eamm-mono">{{ view.exceptionClass }}</div>
-                            <div class="eamm-muted">{{ view.exceptionMessage|length > 140 ? view.exceptionMessage|slice(0, 140) ~ '…' : view.exceptionMessage }}</div>
+        {% if can_remove and selected is not empty %}
+            <div class="eamm-toolbar">
+                <strong>{{ 'eamm.batch.selected'|trans({'%count%': selected|length, '%formatted%': selected|length|eamm_number}) }}</strong>
+                <button type="button" class="btn btn-sm btn-secondary" data-loading="addAttribute(disabled)" data-action="live#action" data-live-action-param="clearSelection">{{ 'eamm.batch.clear_selection'|trans }}</button>
+                <button type="button" class="btn btn-sm btn-danger" data-loading="addAttribute(disabled)" data-eamm-confirm="{{ 'eamm.messages.confirm_remove_selected'|trans }}"
+                        data-action="live#action" data-live-action-param="removeSelected">{{ 'eamm.batch.remove_selected'|trans }}</button>
+            </div>
+        {% endif %}
+
+        <div class="eamm-table-wrap" data-loading="delay(300)|addClass(eamm-is-loading)">
+            <table class="table datagrid eamm-messages {{ views is empty ? 'datagrid-empty' }}">
+                <thead>
+                    <tr>
+                        {% if can_remove %}<th><span class="visually-hidden">{{ 'eamm.batch.select_page'|trans }}</span></th>{% endif %}
+                        <th>{{ 'eamm.column.id'|trans }}</th>
+                        <th>{{ 'eamm.column.class'|trans }}</th>
+                        <th>{{ 'eamm.column.queued_at'|trans }}</th>
+                        <th class="text-end">{{ 'eamm.column.age'|trans }}</th>
+                        <th class="text-end eamm-col-optional">{{ 'eamm.column.redeliveries'|trans }}</th>
+                        {% if has_errors %}<th>{{ 'eamm.column.error'|trans }}</th>{% endif %}
+                        {% for column in extra_columns %}<th class="eamm-col-optional">{{ column.label|trans({}, null) }}</th>{% endfor %}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for view in views %}
+                    {% set view_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id).set('returnTo', return_to) %}
+                    {% set label = eamm_label(view) %}
+                    {% set name = label ~ ' #' ~ view.id %}
+                    <tr>
+                        {% if can_remove %}
+                            <td><input type="checkbox" class="form-check-input" data-eamm-range data-model="selected[]" value="{{ this.reference(view) }}" {{ this.reference(view) in selected ? 'checked' }}
+                                       aria-label="{{ 'eamm.batch.select_one'|trans({'%message%': name}) }}"></td>
                         {% endif %}
-                    </td>
-                    <td class="text-nowrap">{{ view.failedAt ? view.failedAt|date('Y-m-d H:i:s') : '—' }}</td>
-                </tr>
-            {% else %}
-                <tr><td colspan="5" class="text-center eamm-muted py-4">{{ 'eamm.transport.empty'|trans }}</td></tr>
-            {% endfor %}
-            </tbody>
-        </table>
+                        <td class="eamm-mono"><a href="{{ view_url }}">{{ view.id }}</a></td>
+                        <td>
+                            <a href="{{ view_url }}" title="{{ view.messageClass }}">{{ label }}</a>
+                            {% if not view.decodable %}<span class="badge badge-warning">{{ 'eamm.failed.undecodable'|trans }}</span>{% endif %}
+                        </td>
+                        <td class="text-nowrap">{{ view.queuedAt|eamm_datetime }}</td>
+                        <td class="text-end text-nowrap">{{ view.queuedAt|eamm_age }}</td>
+                        <td class="text-end eamm-col-optional">{{ view.retryCount|eamm_number }}</td>
+                        {% if has_errors %}
+                            <td>
+                                {% if view.exceptionClass %}
+                                    <div class="eamm-mono">{{ view.exceptionClass }}</div>
+                                    <div class="eamm-muted eamm-clamp" title="{{ view.exceptionMessage }}">{{ view.exceptionMessage }}</div>
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                        {% for column in extra_columns %}<td class="eamm-col-optional">{{ column.valueOf(view) }}</td>{% endfor %}
+                        <td class="text-end text-nowrap">
+                            {% include '@EasyAdminMessengerManager/_partials/extra_actions.html.twig' with {view: view} %}
+                            {% if is_granted('EAMM_REMOVE', view) %}
+                                <button type="button" class="eamm-link-button is-danger" data-loading="addAttribute(disabled)" data-eamm-confirm="{{ 'eamm.messages.confirm_remove'|trans }}"
+                                        aria-label="{{ 'eamm.action.remove_one'|trans({'%message%': name}) }}"
+                                        data-action="live#action" data-live-action-param="remove" data-live-transport-param="{{ view.transport }}" data-live-id-param="{{ view.id }}">{{ 'eamm.action.remove'|trans }}</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="{{ 6 + (can_remove ? 1 : 0) + (has_errors ? 1 : 0) + extra_columns|length }}" class="text-center eamm-muted py-4">{{ 'eamm.messages.empty'|trans }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         {% if pagination %}
             {% include '@EasyAdminMessengerManager/_partials/pagination.html.twig' %}

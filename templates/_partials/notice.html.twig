@@ -1,4 +1,12 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
-{% if notice %}
-    <div class="eamm-notice eamm-notice-{{ notice.type }}" role="status">{{ notice.message|trans(notice.parameters) }}</div>
+{% if notice ?? null %}
+    <div class="alert alert-{{ notice.type }} eamm-notice" role="{{ notice.type == 'danger' ? 'alert' : 'status' }}">
+        <span>
+            {{ notice.message|trans(notice.parameters ?? {}) }}
+            {% if notice.linkUrl ?? null %}<a class="alert-link" href="{{ notice.linkUrl }}">{{ notice.linkLabel|trans }}</a>{% endif %}
+        </span>
+        {% if dismissible ?? true %}
+            <button type="button" class="eamm-notice-close" data-eamm-dismiss aria-label="{{ 'eamm.notice.close'|trans }}">&times;</button>
+        {% endif %}
+    </div>
 {% endif %}

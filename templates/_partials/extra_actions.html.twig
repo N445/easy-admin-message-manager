@@ -1,0 +1,5 @@
+{% for action in eamm_actions(view) %}
+    {% if action.permission is null or is_granted(action.permission, view) %}
+        <a class="{{ link_class ?? 'eamm-link-button me-2' }}" href="{{ action.url }}">{% if action.icon %}<i class="{{ action.icon }}" aria-hidden="true"></i> {% endif %}{{ action.label|trans({}, null) }}</a>
+    {% endif %}
+{% endfor %}

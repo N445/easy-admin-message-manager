@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EasyAdminMessengerManager\Controller;
 
 use EasyAdminMessengerManager\History\HistoryRepository;
+use EasyAdminMessengerManager\Message\ApplicationFrame;
 use EasyAdminMessengerManager\Message\MessageFinder;
 use EasyAdminMessengerManager\Message\MessageView;
 use EasyAdminMessengerManager\Payload\PayloadNormalizer;
@@ -13,12 +14,15 @@ use EasyAdminMessengerManager\Transport\TransportException;
 use EasyAdminMessengerManager\Transport\TransportRegistry;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Option\EA;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGeneratorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 abstract class AbstractMessengerDashboardController extends AbstractController
 {
+    private const int TIMELINE_LIMIT = 50;
+
     public static function getSubscribedServices(): array
     {
         return [
@@ -26,6 +30,7 @@ abstract class AbstractMessengerDashboardController extends AbstractController
             TransportRegistry::class,
             MessageFinder::class,
             PayloadNormalizer::class,
+            AdminUrlGeneratorInterface::class,
             HistoryRepository::class => '?'.HistoryRepository::class,
         ];
     }
@@ -35,6 +40,7 @@ abstract class AbstractMessengerDashboardController extends AbstractController
     {
         return $this->page('overview', $request, [
             'hidden_transports' => $this->hiddenTransports(),
+            'stuck_after_seconds' => $this->stuckAfterSeconds(),
         ]);
     }
 
@@ -52,12 +58,17 @@ abstract class AbstractMessengerDashboardController extends AbstractController
     {
         return $this->page('failed/index', $request, [
             'per_page' => $this->messagesPerPage(),
+            'hidden_transports' => $this->hiddenTransports(),
         ]);
     }
 
     #[AdminRoute('/messages/{transport}/{messageId}', name: 'message')]
     public function message(Request $request, string $transport, string $messageId): Response
     {
+        if (\in_array($transport, $this->hiddenTransports(), true)) {
+            throw $this->createNotFoundException(\sprintf('The transport "%s" is hidden.', $transport));
+        }
+
         try {
             $view = $this->service(MessageFinder::class)->find($transport, $messageId);
         } catch (TransportException $exception) {
@@ -68,10 +79,12 @@ abstract class AbstractMessengerDashboardController extends AbstractController
 
         return $this->page('message', $request, [
             'view' => $view,
-            'label' => $this->describeMessage($view),
+            'timeline' => $this->timeline($view),
             'is_failure' => $this->service(TransportRegistry::class)->isFailure($transport),
             'payload' => $normalizer->json($view->envelope->getMessage()),
             'stamps' => $normalizer->json($view->stamps()),
+            'application_frame' => ApplicationFrame::of($view->flattenException, (string) $this->getParameter('kernel.project_dir')),
+            'return_to' => $this->returnTo($request),
         ]);
     }
 
@@ -95,6 +108,7 @@ abstract class AbstractMessengerDashboardController extends AbstractController
         return $this->page('history_entry', $request, [
             'entry' => $entry,
             'payload_is_json' => \is_string($entry['payload']) && json_validate($entry['payload']),
+            'return_to' => $this->returnTo($request),
         ]);
     }
 
@@ -116,9 +130,9 @@ abstract class AbstractMessengerDashboardController extends AbstractController
         return [];
     }
 
-    protected function describeMessage(MessageView $view): string
+    protected function stuckAfterSeconds(): int
     {
-        return $view->shortClass();
+        return 900;
     }
 
     /**
@@ -135,6 +149,26 @@ abstract class AbstractMessengerDashboardController extends AbstractController
             'eamm_history_enabled' => $this->isHistoryEnabled(),
             'eamm_refresh_seconds' => $this->refreshSeconds(),
         ]);
+    }
+
+    private function returnTo(Request $request): ?string
+    {
+        $base = $this->service(AdminUrlGeneratorInterface::class)->unsetAll()->setController(static::class)->setAction('overview')->generateUrl();
+
+        return ReturnUrl::forBaseUrl($base)->validated($request->query->all()['returnTo'] ?? null);
+    }
+
+    /**
+     * @return list<array<string, mixed>>|null
+     */
+    private function timeline(MessageView $view): ?array
+    {
+        $trackingId = $view->trackingId();
+        if (null === $trackingId) {
+            return null;
+        }
+
+        return $this->historyRepository()?->timeline($trackingId, self::TIMELINE_LIMIT);
     }
 
     private function isHistoryEnabled(): bool

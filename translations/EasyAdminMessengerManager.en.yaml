@@ -7,50 +7,98 @@ eamm:
     overview:
         title: Messenger
         transports: Transports
-        failure: failure
+        failure: failure transport
         see_failed: See failed messages
         browse: Browse pending messages
         not_listable: Not listable
         failed_title: 'Failed messages (%count%)'
-        live: 'Refreshed every %seconds% s'
         last_24h: Last 24 hours
+        recent_failures: '1 failed in the last 24 h|%formatted% failed in the last 24 h'
+        oldest: 'Oldest: %age%'
+        stuck: Stuck?
+        stuck_help: 'The oldest message has been waiting for %age%: are the workers running?'
+        trend_up: 'Up from %count% at the previous refresh'
+        trend_down: 'Down from %count% at the previous refresh'
+    poll:
+        pause: 'Pause auto-refresh (every %seconds% s)'
+        resume: Resume auto-refresh
+    setup:
+        live_missing: 'Live Components JavaScript is not loaded on this page: buttons, filters and auto-refresh do nothing. See step 3 of the README.'
+        assets_missing: 'The bundle assets are missing or outdated: run "php bin/console assets:install public".'
+    notice:
+        close: Close
+    copy:
+        label: 'Copy %value%'
+        copied: Copied!
+    error:
+        load: 'The data could not be loaded. The error was logged.'
+        retry: Retry
     breakdown:
+        title: Failure breakdown
+        filter_on: 'Filter on "%value%"'
         sampled: 'Computed on the %count% most recent of %total% messages.'
         by_class: By message class
         by_exception: By exception
         by_origin: By original transport
+        by_message: By error message
+        see_all: 'See all %count%'
     failed:
-        title: 'Failed messages (%count%)'
-        empty: No failed message.
+        empty: No failed messages. Every handler is doing fine.
+        no_match: No message matches these filters.
         undecodable: undecodable
-        undecodable_help: This message cannot be decoded anymore (its class was probably renamed or removed). It cannot be retried, only removed.
-        confirm_retry: Retry this message now? Its handler will run again, side effects included.
+        undecodable_help: This message cannot be decoded anymore (its class was probably renamed or removed). It cannot be run again, only removed.
+        confirm_retry: Run this message now? Its handler runs again in this request, side effects included.
         confirm_remove: Remove this message permanently?
     batch:
-        selection: 'Selection:'
+        selected: '1 selected|%formatted% selected'
+        other_pages: '(%formatted% on other pages)'
+        hint: Tick messages to requeue or remove them.
         select_page: Select page
+        select_one: 'Select %message%'
+        selection_cleared: The selection was cleared because the filters changed.
+        count_changed: 'Nothing was done: %count% messages match now instead of %expected%. Check the list and try again.'
+        filter_required: Set a filter before acting on every matching message.
+        see_history: See history
         clear_selection: Clear selection
-        requeue_selected: Send back to queue
+        requeue_selected: Requeue
         remove_selected: Remove
         all_matching: 'All %count% matching messages:'
-        requeue_all: Send all back to queue
+        requeue_all: Requeue all
         remove_all: Remove all
-        confirm_requeue: Send the selected messages back to their original queue?
+        confirm_requeue: Send the selected messages back to their original transport?
         confirm_remove: Remove the selected messages permanently?
-        confirm_requeue_all: 'Send the %count% matching messages back to their original queue?'
-        confirm_remove_all: 'Remove the %count% matching messages permanently?'
+        confirm_requeue_all: 'Send the %count% messages matching %filters% back to their original transport?'
+        confirm_remove_all: 'Remove the %count% messages matching %filters% permanently? Type %expected% to confirm.'
     action:
-        retry: Retry
+        retry: Run now
+        retry_help: Runs the handler immediately, in this request.
+        retry_one: 'Run %message% now'
+        remove_one: 'Remove %message%'
+        requeue_help: Sent back to their original transport, processed by the workers.
         remove: Remove
     filter:
         from: From
         to: To
-        apply: Filter
         reset: Reset
+        apply: Filter
+        min_duration: Min. duration (ms)
+        remove: 'Remove the "%filter%" filter'
+        presets: Quick periods
+        preset:
+            hour: Last hour
+            day: Last 24 h
+            week: Last 7 days
+    sort:
+        newest_first: Show newest first
+        oldest_first: Show oldest first
     show:
         trace: Stack trace
-        payload: Message
+        payload: Content
         stamps: Stamps
+        back: Back to the list
+        similar: '1 similar|%formatted% similar'
+        similar_many: 'more than %formatted% similar'
+        application_frame: First frame in your code
     json:
         search: Search (Enter for next match)
         expand: Expand all
@@ -61,14 +109,20 @@ eamm:
         no_transport: No listable transport.
         refresh: Refresh
         partial: 'This transport cannot be queried in SQL: only its first %count% messages are browsed and filtered.'
-    transport:
-        title: 'Transport %name%'
-        preview: 'First %limit% messages out of %count%.'
-        empty: No pending message.
+        empty: No pending messages.
+        confirm_remove: Remove this pending message permanently? A worker may be processing it right now.
+        confirm_remove_selected: Remove the selected pending messages permanently? A worker may be processing some of them right now.
     history:
         no_payload: The message content was not captured (history.capture_payload).
         title: History
-        empty: No history entry.
+        empty: No history entries.
+        open_message: 'Still in the "%transport%" transport: open it'
+        message_gone: No longer in the failure transport.
+    timeline:
+        title: Timeline
+        untracked: This message has no tracking id (it was dispatched before the history was enabled), so its attempts cannot be traced.
+        empty: No attempt recorded yet for this message.
+        see_all: Timeline
     status:
         handled: Handled
         retrying: Retrying
@@ -87,12 +141,38 @@ eamm:
         failures: Failures
         avg_duration: Avg. duration
         status: Status
-        handled_at: Date
+        handled_at: Handled at
         attempt: Attempt
         duration: Duration
+        queued_at: Queued at
+        age: Age
+        redeliveries: Redeliveries
+        tracking_id: Tracking id
     pagination:
+        label: Pagination
         summary: 'Page %page% of %pages% (%total% messages)'
+        first: First page
+        previous: Previous page
+        next: Next page
+        last: Last page
+        page: 'Page %page%'
+        go_to: Go to page
+    time:
+        seconds: '%count% s ago'
+        minutes: '%count% min ago'
+        hours: '%count% h ago'
+        days: '%count% d ago'
+    duration:
+        seconds: '%count% s'
+        minutes: '%count% min'
+        hours: '%count% h'
+        days: '%count% d'
     flash:
         retried: The message was handled successfully.
         removed: The message was removed.
-        batch: '%count% message(s) scheduled for processing.'
+        batch_done_requeue: '1 message requeued.|%count% messages requeued.'
+        batch_done_remove: '1 message removed.|%count% messages removed.'
+        batch_queued_requeue: '1 message queued for requeue on "%transport%".|%count% messages queued for requeue on "%transport%".'
+        batch_queued_remove: '1 message queued for removal on "%transport%".|%count% messages queued for removal on "%transport%".'
+        pending_removed: '1 message removed.|%count% messages removed.'
+        pending_partially_removed: '%count% of %requested% messages removed: the others were already gone (see the logs).'

@@ -1,12 +1,38 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
 {% if pagination.pages > 1 %}
-    <nav class="eamm-pagination" aria-label="pagination">
-        <span class="eamm-muted">{{ 'eamm.pagination.summary'|trans({'%page%': pagination.page, '%pages%': pagination.pages, '%total%': pagination.total}) }}</span>
-        <div class="d-flex gap-1">
-            {% for target in [1, pagination.page - 1, pagination.page, pagination.page + 1, pagination.pages]|filter(p => p >= 1 and p <= pagination.pages)|reduce((carry, p) => p in carry ? carry : carry|merge([p]), []) %}
-                <button type="button" class="btn btn-sm btn-secondary" {{ target == pagination.page ? 'aria-current="page"' }}
-                        data-action="live#action" data-live-action-param="goToPage" data-live-target-page-param="{{ target }}">{{ target }}</button>
+    {% set page = pagination.page %}
+    {% set last = pagination.pages %}
+    <nav class="eamm-pagination" aria-label="{{ 'eamm.pagination.label'|trans }}">
+        <span class="eamm-muted">{{ 'eamm.pagination.summary'|trans({'%page%': page|eamm_number, '%pages%': last|eamm_number, '%total%': pagination.total|eamm_number}) }}</span>
+        <div class="eamm-pagination-links">
+            {% for link in [
+                {target: 1, label: 'eamm.pagination.first', icon: '«'},
+                {target: page - 1, label: 'eamm.pagination.previous', icon: '‹'},
+            ] %}
+                <button type="button" class="btn btn-sm btn-secondary" aria-label="{{ link.label|trans }}" title="{{ link.label|trans }}" {% if page == 1 %}disabled{% else %}data-loading="addAttribute(disabled)"{% endif %}
+                        data-action="live#action" data-live-action-param="goToPage" data-live-target-page-param="{{ link.target }}">{{ link.icon }}</button>
             {% endfor %}
+            {% for target in pagination.window %}
+                {% if target is null %}
+                    <span class="eamm-pagination-gap" aria-hidden="true">…</span>
+                {% elseif target == page %}
+                    <button type="button" class="btn btn-sm btn-secondary" aria-current="page" aria-label="{{ 'eamm.pagination.page'|trans({'%page%': target}) }}" disabled>{{ target|eamm_number }}</button>
+                {% else %}
+                    <button type="button" class="btn btn-sm btn-secondary" aria-label="{{ 'eamm.pagination.page'|trans({'%page%': target}) }}" data-loading="addAttribute(disabled)"
+                            data-action="live#action" data-live-action-param="goToPage" data-live-target-page-param="{{ target }}">{{ target|eamm_number }}</button>
+                {% endif %}
+            {% endfor %}
+            {% for link in [
+                {target: page + 1, label: 'eamm.pagination.next', icon: '›'},
+                {target: last, label: 'eamm.pagination.last', icon: '»'},
+            ] %}
+                <button type="button" class="btn btn-sm btn-secondary" aria-label="{{ link.label|trans }}" title="{{ link.label|trans }}" {% if page == last %}disabled{% else %}data-loading="addAttribute(disabled)"{% endif %}
+                        data-action="live#action" data-live-action-param="goToPage" data-live-target-page-param="{{ link.target }}">{{ link.icon }}</button>
+            {% endfor %}
+            <label class="eamm-pagination-jump">
+                <span>{{ 'eamm.pagination.go_to'|trans }}</span>
+                <input type="number" class="eamm-input" min="1" max="{{ last }}" value="{{ page }}" data-model="on(change)|page">
+            </label>
         </div>
     </nav>
 {% endif %}

@@ -7,6 +7,8 @@ namespace EasyAdminMessengerManager\Component;
 use EasyAdminMessengerManager\Failed\ActionResult;
 use EasyAdminMessengerManager\Failed\FailedMessageRemover;
 use EasyAdminMessengerManager\Failed\FailedMessageRetrier;
+use EasyAdminMessengerManager\Message\MessageFinder;
+use EasyAdminMessengerManager\Message\MessageView;
 use EasyAdminMessengerManager\Security\Permission;
 use EasyAdminMessengerManager\Transport\TransportException;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGeneratorInterface;
@@ -34,6 +36,9 @@ final class MessageActionsComponent extends AbstractController
     #[LiveProp]
     public bool $decodable = true;
 
+    #[LiveProp]
+    public string $returnTo = '';
+
     public ?Notice $notice = null;
 
     public function __construct(
@@ -41,13 +46,14 @@ final class MessageActionsComponent extends AbstractController
         private readonly FailedMessageRemover $remover,
         private readonly AdminUrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
+        private readonly MessageFinder $finder,
     ) {
     }
 
     #[LiveAction]
     public function retry(): ?Response
     {
-        $this->denyAccessUnlessGranted(Permission::Retry->value);
+        $this->denyAccessUnlessGranted(Permission::Retry->value, $this->getView());
         $result = $this->attempt(fn (): ActionResult => $this->retrier->retry($this->transport, $this->messageId));
 
         return $this->conclude($result, 'eamm.flash.retried');
@@ -56,7 +62,7 @@ final class MessageActionsComponent extends AbstractController
     #[LiveAction]
     public function remove(): ?Response
     {
-        $this->denyAccessUnlessGranted(Permission::Remove->value);
+        $this->denyAccessUnlessGranted(Permission::Remove->value, $this->getView());
         $result = $this->attempt(function (): ActionResult {
             $this->remover->remove($this->transport, $this->messageId);
 
@@ -66,9 +72,22 @@ final class MessageActionsComponent extends AbstractController
         return $this->conclude($result, 'eamm.flash.removed');
     }
 
+    public function getView(): ?MessageView
+    {
+        try {
+            return $this->finder->find($this->transport, $this->messageId);
+        } catch (TransportException) {
+            return null;
+        }
+    }
+
     public function getListUrl(): string
     {
-        return $this->urls->setDashboard($this->dashboard)->setController($this->controller)->setAction('failed')->generateUrl();
+        if ('' !== $this->returnTo) {
+            return $this->returnTo;
+        }
+
+        return $this->urls->unsetAll()->setDashboard($this->dashboard)->setController($this->controller)->setAction('failed')->generateUrl();
     }
 
     /**

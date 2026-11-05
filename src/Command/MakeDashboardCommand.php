@@ -15,8 +15,8 @@ use Symfony\Component\Filesystem\Filesystem;
 
 use function Symfony\Component\String\u;
 
-#[AsCommand(name: 'make:messenger:dashboard', description: 'Creates an EasyAdmin controller managing Symfony Messenger messages')]
-final class MakeMessengerDashboardCommand extends Command
+#[AsCommand(name: 'eamm:make:dashboard', description: 'Creates an EasyAdmin controller managing Symfony Messenger messages')]
+final class MakeDashboardCommand extends Command
 {
     private const string SKELETON = __DIR__.'/../Resources/skeleton/messenger_dashboard_controller.tpl';
 
@@ -32,7 +32,15 @@ final class MakeMessengerDashboardCommand extends Command
         $this
             ->addArgument('class', InputArgument::OPTIONAL, 'Controller class name', 'MessengerDashboardController')
             ->addOption('dir', null, InputOption::VALUE_REQUIRED, 'Directory relative to the project root', 'src/Controller/Admin')
-            ->addOption('route', null, InputOption::VALUE_REQUIRED, 'Route path and name prefix inside the dashboard', 'messenger');
+            ->addOption('route', null, InputOption::VALUE_REQUIRED, 'Route path and name prefix inside the dashboard', 'messenger')
+            ->setHelp(<<<'HELP'
+                Generates the EasyAdmin controller serving the Messenger pages:
+
+                  <info>php %command.full_name%</info>
+                  <info>php %command.full_name% Queues --dir=src/Admin --route=queues</info>
+
+                Pick another <comment>--route</comment> when <comment>/admin/messenger</comment> is already taken by another bundle.
+                HELP);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

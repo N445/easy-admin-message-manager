@@ -48,6 +48,11 @@ final class MessageSources
         return $this->pages([$name]);
     }
 
+    public function forget(): void
+    {
+        $this->sources = [];
+    }
+
     /**
      * @param list<string> $names
      */

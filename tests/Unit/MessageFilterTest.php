@@ -41,6 +41,26 @@ final class MessageFilterTest extends TestCase
         self::assertFalse(MessageFilter::fromArray(['to' => '2026-03-09'])->matches($view));
     }
 
+    public function testPeriodAcceptsMinutePrecision(): void
+    {
+        $view = $this->view(new \DateTimeImmutable('2026-03-10 14:30:20'));
+
+        self::assertTrue(MessageFilter::fromArray(['from' => '2026-03-10T14:30', 'to' => '2026-03-10T14:30'])->matches($view));
+        self::assertFalse(MessageFilter::fromArray(['from' => '2026-03-10T14:31'])->matches($view));
+        self::assertFalse(MessageFilter::fromArray(['to' => '2026-03-10T14:29'])->matches($view));
+        self::assertTrue(MessageFilter::fromArray(['from' => '2026-02-31T10:00'])->isEmpty());
+    }
+
+    public function testInputValuesUseTheDatetimeLocalFormat(): void
+    {
+        $filter = MessageFilter::fromArray(['from' => '2026-03-10', 'to' => '2026-03-11T08:15']);
+
+        self::assertSame('2026-03-10T00:00', $filter->fromInput());
+        self::assertSame('2026-03-11T08:15', $filter->toInput());
+        self::assertSame(['from' => '2026-03-10', 'to' => '2026-03-11T08:15'], $filter->toArray());
+        self::assertSame('', (new MessageFilter())->fromInput());
+    }
+
     public function testToArrayRoundTrips(): void
     {
         $query = ['class' => 'Foo', 'origin' => 'async', 'exception' => 'Bar', 'from' => '2026-01-01', 'to' => '2026-01-31'];

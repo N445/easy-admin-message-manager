@@ -1,27 +1,42 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
-{% if breakdown.byClass is not empty %}
+{% if not breakdown.isEmpty %}
     {% if total is defined and total > sample_size %}
-        <p class="eamm-muted">{{ 'eamm.breakdown.sampled'|trans({'%count%': sample_size, '%total%': total}) }}</p>
+        <p class="eamm-muted">{{ 'eamm.breakdown.sampled'|trans({'%count%': sample_size|eamm_number, '%total%': total|eamm_number}) }}</p>
     {% endif %}
-    <div class="eamm-breakdown">
+    <div class="eamm-breakdown" data-loading="delay(300)|addClass(eamm-is-loading)">
         {% for column in [
             {title: 'eamm.breakdown.by_class', counts: breakdown.byClass, filter: 'class'},
             {title: 'eamm.breakdown.by_exception', counts: breakdown.byException, filter: 'exception'},
             {title: 'eamm.breakdown.by_origin', counts: breakdown.byOrigin, filter: 'origin'},
+            {title: 'eamm.breakdown.by_message', counts: breakdown.byMessage, filter: 'exception', pattern: true},
         ] %}
-            <table class="table datagrid">
-                <thead><tr><th>{{ column.title|trans }}</th><th class="text-end">{{ 'eamm.column.total'|trans }}</th></tr></thead>
-                <tbody>
-                {% for key, count in column.counts|slice(0, 10, true) %}
-                    <tr>
-                        <td class="eamm-mono"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('failed').set(column.filter, key) }}">{{ key }}</a></td>
-                        <td class="text-end">{{ count }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            <div class="eamm-table-wrap">
+                <table class="table datagrid">
+                    <thead><tr><th>{{ column.title|trans }}</th><th class="text-end">{{ 'eamm.column.total'|trans }}</th></tr></thead>
+                    <tbody>
+                    {% for key, count in column.counts|slice(0, limit ?? 10, true) %}
+                        {% set label = key ~ '' %}
+                        {% set value = (column.pattern ?? false) ? breakdown.searchTerm(label) : label %}
+                        <tr>
+                            <td class="eamm-mono">
+                                {% if value is empty or value == '?' %}
+                                    <span title="{{ label }}">{{ label is empty ? '—' : label }}</span>
+                                {% elseif live_filters ?? false %}
+                                    <button type="button" class="eamm-link-button eamm-mono text-start" title="{{ 'eamm.breakdown.filter_on'|trans({'%value%': value}) }}" data-loading="addAttribute(disabled)"
+                                            data-action="live#action" data-live-action-param="filterBy" data-live-field-param="{{ column.filter }}" data-live-value-param="{{ value }}">{{ label }}</button>
+                                {% else %}
+                                    <a href="{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('failed').set(column.filter, value) }}" title="{{ 'eamm.breakdown.filter_on'|trans({'%value%': value}) }}">{{ label }}</a>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ count|eamm_number }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% if see_all_url is defined and column.counts|length > limit %}
+                    <a class="eamm-see-all" href="{{ see_all_url }}">{{ 'eamm.breakdown.see_all'|trans({'%count%': column.counts|length}) }}</a>
+                {% endif %}
+            </div>
         {% endfor %}
     </div>
-{% else %}
-    <p class="eamm-muted">{{ 'eamm.failed.empty'|trans }}</p>
 {% endif %}

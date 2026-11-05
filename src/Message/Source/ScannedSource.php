@@ -6,6 +6,7 @@ namespace EasyAdminMessengerManager\Message\Source;
 
 use EasyAdminMessengerManager\Message\MessageFilter;
 use EasyAdminMessengerManager\Message\MessageFinder;
+use EasyAdminMessengerManager\Message\MessageOrder;
 use EasyAdminMessengerManager\Message\MessageView;
 use EasyAdminMessengerManager\Transport\TransportRegistry;
 
@@ -29,9 +30,14 @@ final class ScannedSource implements MessageSource
         return \count($this->matching($filter));
     }
 
-    public function slice(MessageFilter $filter, int $offset, int $limit): array
+    public function countUpTo(MessageFilter $filter, int $limit): int
     {
-        return \array_slice($this->matching($filter), $offset, $limit);
+        return min($limit, $this->count($filter));
+    }
+
+    public function slice(MessageFilter $filter, int $offset, int $limit, MessageOrder $order = MessageOrder::NewestFirst): array
+    {
+        return \array_slice($order->arrange($this->matching($filter)), $offset, $limit);
     }
 
     public function ids(MessageFilter $filter): array
@@ -57,6 +63,11 @@ final class ScannedSource implements MessageSource
         return $this->complete;
     }
 
+    public function oldestQueuedAt(): ?\DateTimeImmutable
+    {
+        return ($this->finder->scan($this->transport, 1)[0] ?? null)?->queuedAt;
+    }
+
     /**
      * @return list<MessageView>
      */
@@ -70,6 +81,8 @@ final class ScannedSource implements MessageSource
         $views = $this->finder->scan($this->transport, $this->maxScan);
         $this->complete = \count($views) < $this->maxScan;
 
-        return $this->matching[$key] = array_values(array_filter($views, $filter->matches(...)));
+        $byQueuedAt = !$this->transports->isFailure($this->transport);
+
+        return $this->matching[$key] = array_values(array_filter($views, static fn (MessageView $view): bool => $filter->matches($view, $byQueuedAt)));
     }
 }

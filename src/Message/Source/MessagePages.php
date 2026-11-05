@@ -7,6 +7,7 @@ namespace EasyAdminMessengerManager\Message\Source;
 use EasyAdminMessengerManager\Batch\MessageSelection;
 use EasyAdminMessengerManager\Controller\Pagination;
 use EasyAdminMessengerManager\Message\MessageFilter;
+use EasyAdminMessengerManager\Message\MessageOrder;
 use EasyAdminMessengerManager\Message\MessagePage;
 use EasyAdminMessengerManager\Message\MessageView;
 
@@ -26,11 +27,26 @@ final readonly class MessagePages
         return array_sum(array_map(static fn (MessageSource $source): int => $source->count($filter), $this->sources));
     }
 
-    public function page(MessageFilter $filter, int $requestedPage, int $perPage): MessagePage
+    public function countUpTo(MessageFilter $filter, int $limit): int
+    {
+        $count = 0;
+        foreach ($this->sources as $source) {
+            $count += $source->countUpTo($filter, max(0, $limit - $count));
+        }
+
+        return $count;
+    }
+
+    public function page(MessageFilter $filter, int $requestedPage, int $perPage, MessageOrder $order = MessageOrder::NewestFirst): MessagePage
     {
         $pagination = Pagination::of($this->count($filter), $requestedPage, $perPage);
 
-        return new MessagePage($this->slice($filter, $pagination->offset(), $perPage), $pagination, $this->isComplete());
+        return new MessagePage($this->slice($filter, $pagination->offset(), $perPage, $order), $pagination, $this->isComplete());
+    }
+
+    public function first(MessageFilter $filter): ?MessageView
+    {
+        return $this->slice($filter, 0, 1)[0] ?? null;
     }
 
     /**
@@ -61,6 +77,13 @@ final readonly class MessagePages
         return array_sum(array_map(static fn (MessageSource $source): int => $source->remove($filter), $this->sources));
     }
 
+    public function oldestQueuedAt(): ?\DateTimeImmutable
+    {
+        $dates = array_filter(array_map(static fn (MessageSource $source): ?\DateTimeImmutable => $source->oldestQueuedAt(), $this->sources));
+
+        return [] === $dates ? null : min($dates);
+    }
+
     public function isComplete(): bool
     {
         return [] === array_filter($this->sources, static fn (MessageSource $source): bool => !$source->isComplete());
@@ -69,16 +92,16 @@ final readonly class MessagePages
     /**
      * @return list<MessageView>
      */
-    private function slice(MessageFilter $filter, int $offset, int $limit): array
+    private function slice(MessageFilter $filter, int $offset, int $limit, MessageOrder $order = MessageOrder::NewestFirst): array
     {
         if (1 === \count($this->sources)) {
-            return array_values($this->sources)[0]->slice($filter, $offset, $limit);
+            return array_values($this->sources)[0]->slice($filter, $offset, $limit, $order);
         }
 
         $views = [];
-        foreach ($this->sources as $source) {
+        foreach ($order->arrange(array_values($this->sources)) as $source) {
             $count = $source->count($filter);
-            $views = [...$views, ...$this->sliceOf($source, $filter, max(0, $offset), $limit - \count($views))];
+            $views = [...$views, ...$this->sliceOf($source, $filter, max(0, $offset), $limit - \count($views), $order)];
             $offset -= $count;
         }
 
@@ -88,12 +111,12 @@ final readonly class MessagePages
     /**
      * @return list<MessageView>
      */
-    private function sliceOf(MessageSource $source, MessageFilter $filter, int $offset, int $limit): array
+    private function sliceOf(MessageSource $source, MessageFilter $filter, int $offset, int $limit, MessageOrder $order): array
     {
         if ($limit <= 0) {
             return [];
         }
 
-        return $source->slice($filter, $offset, $limit);
+        return $source->slice($filter, $offset, $limit, $order);
     }
 }

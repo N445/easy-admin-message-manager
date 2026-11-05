@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EasyAdminMessengerManager\History;
 
 use EasyAdminMessengerManager\Payload\PayloadNormalizer;
+use EasyAdminMessengerManager\Stamp\EammMessageIdStamp;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -86,6 +87,7 @@ final class HistoryRecorder implements EventSubscriberInterface
             null === $memory ? null : max(0, memory_get_peak_usage() - $memory),
             $error,
             $this->capturePayload ? $this->payloadNormalizer->json($message) : null,
+            $envelope->last(EammMessageIdStamp::class)?->id,
         );
     }
 

@@ -1,13 +1,22 @@
 {% extends '@EasyAdminMessengerManager/layout.html.twig' %}
 {% trans_default_domain 'EasyAdminMessengerManager' %}
 
-{% block eamm_title %}{{ label }} <span class="eamm-muted">#{{ view.id }}</span>{% endblock %}
+{% block eamm_title %}{{ eamm_label(view) }} <span class="eamm-muted">#{{ view.id }}</span> {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: view.id} %}{% endblock %}
 
 {% block head_javascript %}
     {{ parent() }}
     <script src="{{ asset('bundles/easyadminmessengermanager/vendor/json-viewer/json-viewer.bundle.js') }}" defer></script>
     <script src="{{ asset('bundles/easyadminmessengermanager/eamm-json.js') }}" defer></script>
 {% endblock %}
+
+{% macro filtered_link(field, value, controller, dashboard) %}
+    {% if value %}
+        <a href="{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('failed').set(field, value) }}">{{ value }}</a>
+        {{ component('EAMM:SimilarFailures', {controller: controller, dashboard: dashboard, field: field, value: value, loading: 'defer', 'loading-tag': 'span'}) }}
+    {% else %}
+        —
+    {% endif %}
+{% endmacro %}
 
 {% block eamm_content %}
     {% if is_failure %}
@@ -17,42 +26,88 @@
             transport: view.transport,
             messageId: view.id,
             decodable: view.decodable,
+            returnTo: return_to ?? '',
         }) }}
     {% else %}
         <div class="d-flex gap-2 mb-3">
-            <a class="btn btn-sm btn-secondary" href="{{ ea_url().setController(eamm_controller).setAction('messages').set('transport', view.transport) }}">← {{ view.transport }}</a>
+            {% if return_to %}
+                <a class="btn btn-sm btn-secondary" href="{{ return_to }}">← {{ 'eamm.show.back'|trans }}</a>
+            {% else %}
+                <a class="btn btn-sm btn-secondary" href="{{ ea_url().unsetAll().setController(eamm_controller).setAction('messages').set('transport', view.transport) }}">← {{ view.transport }}</a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    {% set extra_actions = eamm_actions(view) %}
+    {% if extra_actions is not empty %}
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {% include '@EasyAdminMessengerManager/_partials/extra_actions.html.twig' with {view: view, link_class: 'btn btn-sm btn-secondary'} %}
         </div>
     {% endif %}
 
     {% if not view.decodable %}
-        <div class="eamm-notice eamm-notice-warning">{{ 'eamm.failed.undecodable_help'|trans }}</div>
+        {% include '@EasyAdminMessengerManager/_partials/notice.html.twig' with {notice: {type: 'warning', message: 'eamm.failed.undecodable_help'}, dismissible: false} %}
     {% endif %}
 
-    <table class="table datagrid">
-        <tbody>
-            <tr><th>{{ 'eamm.column.class'|trans }}</th><td class="eamm-mono">{{ view.messageClass }}</td></tr>
-            <tr><th>{{ 'eamm.column.transport'|trans }}</th><td>{{ view.transport }}</td></tr>
-            <tr><th>{{ 'eamm.column.origin'|trans }}</th><td>{{ view.originalTransport ?? '—' }}</td></tr>
-            <tr><th>{{ 'eamm.column.retries'|trans }}</th><td>{{ view.retryCount }}</td></tr>
-            <tr><th>{{ 'eamm.column.failed_at'|trans }}</th><td>{{ view.failedAt ? view.failedAt|date('Y-m-d H:i:s') : '—' }}</td></tr>
-            <tr><th>{{ 'eamm.column.exception'|trans }}</th><td class="eamm-mono">{{ view.exceptionClass ?? '—' }}</td></tr>
-            <tr><th>{{ 'eamm.column.error'|trans }}</th><td>{{ view.exceptionMessage ?? '—' }}</td></tr>
-        </tbody>
-    </table>
+    <div class="eamm-table-wrap">
+        <table class="table datagrid eamm-summary">
+            <tbody>
+                <tr><th>{{ 'eamm.column.class'|trans }}</th><td class="eamm-mono">{{ _self.filtered_link('class', view.messageClass, eamm_controller, eamm_dashboard) }} {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: view.messageClass} %}</td></tr>
+                <tr><th>{{ 'eamm.column.transport'|trans }}</th><td>{{ view.transport }}</td></tr>
+                <tr><th>{{ 'eamm.column.origin'|trans }}</th><td>{{ _self.filtered_link('origin', view.originalTransport, eamm_controller, eamm_dashboard) }}</td></tr>
+                <tr><th>{{ 'eamm.column.retries'|trans }}</th><td>{{ view.retryCount|eamm_number }}</td></tr>
+                {% if view.queuedAt %}<tr><th>{{ 'eamm.column.queued_at'|trans }}</th><td>{{ view.queuedAt|eamm_datetime }}</td></tr>{% endif %}
+                <tr><th>{{ 'eamm.column.failed_at'|trans }}</th><td>{{ view.failedAt|eamm_datetime }}</td></tr>
+                {% if view.trackingId %}<tr><th>{{ 'eamm.column.tracking_id'|trans }}</th><td class="eamm-mono">{{ view.trackingId }} {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: view.trackingId} %}</td></tr>{% endif %}
+                <tr><th>{{ 'eamm.column.exception'|trans }}</th><td class="eamm-mono">{{ _self.filtered_link('exception', view.exceptionClass, eamm_controller, eamm_dashboard) }}{% if view.exceptionClass %} {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: view.exceptionClass} %}{% endif %}</td></tr>
+            </tbody>
+        </table>
+    </div>
 
-    {% if view.flattenException %}
-        <h2 class="eamm-section-title">{{ 'eamm.show.trace'|trans }}</h2>
-        {% for exception in [view.flattenException]|merge(view.flattenException.allPrevious) %}
-            <details {{ loop.first ? 'open' }} class="mb-2">
-                <summary class="eamm-mono">{{ exception.class }}: {{ exception.message }}</summary>
-                <pre class="eamm-trace">{{ exception.traceAsString }}</pre>
-            </details>
-        {% endfor %}
+    {% if view.exceptionMessage %}
+        <div class="alert alert-danger eamm-notice eamm-error-notice" role="alert">
+            <div>
+                <div class="eamm-mono">{{ view.exceptionClass }}</div>
+                <div class="eamm-error-message">{{ view.exceptionMessage }}</div>
+            </div>
+            {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: view.exceptionMessage, label: 'eamm.column.error'|trans} %}
+        </div>
     {% endif %}
 
     <h2 class="eamm-section-title">{{ 'eamm.show.payload'|trans }}</h2>
     {% include '@EasyAdminMessengerManager/_partials/json_viewer.html.twig' with {json: payload} %}
 
-    <h2 class="eamm-section-title">{{ 'eamm.show.stamps'|trans }}</h2>
-    {% include '@EasyAdminMessengerManager/_partials/json_viewer.html.twig' with {json: stamps, expand: ''} %}
+    {% if eamm_history_enabled %}
+        <h2 class="eamm-section-title">{{ 'eamm.timeline.title'|trans }}</h2>
+        {% if timeline is null %}
+            <p class="eamm-muted eamm-timeline-empty">{{ 'eamm.timeline.untracked'|trans }}</p>
+        {% else %}
+            {% include '@EasyAdminMessengerManager/_partials/timeline.html.twig' with {entries: timeline} %}
+        {% endif %}
+    {% endif %}
+
+    {% if view.flattenException %}
+        <details class="eamm-section">
+            <summary>
+                {{ 'eamm.show.trace'|trans }}
+                {% if application_frame %}
+                    <span class="eamm-frame" title="{{ 'eamm.show.application_frame'|trans }}">
+                        <span class="eamm-mono">{{ application_frame.location }}</span>
+                        {% if application_frame.call %}<span class="eamm-mono eamm-muted">{{ application_frame.call }}()</span>{% endif %}
+                    </span>
+                {% endif %}
+            </summary>
+            {% for exception in [view.flattenException]|merge(view.flattenException.allPrevious) %}
+                <details {{ loop.first ? 'open' }} class="mb-2">
+                    <summary class="eamm-mono">{{ exception.class }}: {{ exception.message }}</summary>
+                    <pre class="eamm-trace">{{ exception.traceAsString }}</pre>
+                </details>
+            {% endfor %}
+        </details>
+    {% endif %}
+
+    <details class="eamm-section">
+        <summary>{{ 'eamm.show.stamps'|trans }}</summary>
+        {% include '@EasyAdminMessengerManager/_partials/json_viewer.html.twig' with {json: stamps, expand: ''} %}
+    </details>
 {% endblock %}

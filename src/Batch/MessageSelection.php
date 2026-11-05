@@ -54,7 +54,12 @@ final class MessageSelection
 
     public static function reference(MessageView $view): string
     {
-        return $view->transport.self::SEPARATOR.$view->id;
+        return self::referenceOf($view->transport, $view->id);
+    }
+
+    public static function referenceOf(string $transport, string $id): string
+    {
+        return $transport.self::SEPARATOR.$id;
     }
 
     /**

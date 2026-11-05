@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace EasyAdminMessengerManager\Tests\Integration;
 
-use EasyAdminMessengerManager\Command\MakeMessengerDashboardCommand;
+use EasyAdminMessengerManager\Command\MakeDashboardCommand;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
 
-final class MakeMessengerDashboardCommandTest extends TestCase
+final class MakeDashboardCommandTest extends TestCase
 {
     private string $projectDir;
 
@@ -24,9 +24,14 @@ final class MakeMessengerDashboardCommandTest extends TestCase
         (new Filesystem())->remove($this->projectDir);
     }
 
+    public function testIsNamespacedUnderEamm(): void
+    {
+        self::assertSame('eamm:make:dashboard', (new MakeDashboardCommand($this->projectDir))->getName());
+    }
+
     public function testGeneratesTheControllerWithDefaults(): void
     {
-        $tester = new CommandTester(new MakeMessengerDashboardCommand($this->projectDir));
+        $tester = new CommandTester(new MakeDashboardCommand($this->projectDir));
 
         self::assertSame(Command::SUCCESS, $tester->execute([]));
 
@@ -39,7 +44,7 @@ final class MakeMessengerDashboardCommandTest extends TestCase
 
     public function testCustomNameDirectoryAndRoute(): void
     {
-        $tester = new CommandTester(new MakeMessengerDashboardCommand($this->projectDir));
+        $tester = new CommandTester(new MakeDashboardCommand($this->projectDir));
 
         $tester->execute(['class' => 'Queues', '--dir' => 'src/Admin/Tools', '--route' => 'Message Queues']);
 
@@ -50,7 +55,7 @@ final class MakeMessengerDashboardCommandTest extends TestCase
 
     public function testRefusesToOverwriteAnExistingFile(): void
     {
-        $tester = new CommandTester(new MakeMessengerDashboardCommand($this->projectDir));
+        $tester = new CommandTester(new MakeDashboardCommand($this->projectDir));
         $tester->execute([]);
 
         self::assertSame(Command::FAILURE, $tester->execute([]));
@@ -60,12 +65,12 @@ final class MakeMessengerDashboardCommandTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        (new CommandTester(new MakeMessengerDashboardCommand($this->projectDir)))->execute(['--dir' => '../evil']);
+        (new CommandTester(new MakeDashboardCommand($this->projectDir)))->execute(['--dir' => '../evil']);
     }
 
     public function testGeneratedClassIsValidPhp(): void
     {
-        (new CommandTester(new MakeMessengerDashboardCommand($this->projectDir)))->execute([]);
+        (new CommandTester(new MakeDashboardCommand($this->projectDir)))->execute([]);
 
         exec('php -l '.escapeshellarg($this->projectDir.'/src/Controller/Admin/MessengerDashboardController.php'), $output, $exitCode);
         self::assertSame(0, $exitCode, implode("\n", $output));

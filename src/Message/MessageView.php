@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EasyAdminMessengerManager\Message;
 
+use EasyAdminMessengerManager\Stamp\EammMessageIdStamp;
 use Symfony\Component\ErrorHandler\Exception\FlattenException;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\ErrorDetailsStamp;
@@ -14,6 +15,8 @@ use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 
 final readonly class MessageView
 {
+    private const string STREAM_ID_PATTERN = '/^(\d{10,})-\d+$/';
+
     public function __construct(
         public string $id,
         public string $transport,
@@ -26,15 +29,17 @@ final readonly class MessageView
         public int $retryCount,
         public ?\DateTimeInterface $failedAt,
         public Envelope $envelope,
+        public ?\DateTimeImmutable $queuedAt = null,
     ) {
     }
 
-    public static function fromEnvelope(Envelope $envelope, string $transport): self
+    public static function fromEnvelope(Envelope $envelope, string $transport, ?\DateTimeImmutable $queuedAt = null): self
     {
         $error = $envelope->last(ErrorDetailsStamp::class);
+        $id = (string) $envelope->last(TransportMessageIdStamp::class)?->getId();
 
         return new self(
-            (string) $envelope->last(TransportMessageIdStamp::class)?->getId(),
+            $id,
             $transport,
             self::messageClassOf($envelope->getMessage()),
             self::isDecodable($envelope),
@@ -45,7 +50,13 @@ final readonly class MessageView
             $envelope->last(RedeliveryStamp::class)?->getRetryCount() ?? 0,
             $envelope->last(RedeliveryStamp::class)?->getRedeliveredAt(),
             $envelope,
+            $queuedAt ?? self::queuedAtFromStreamId($id),
         );
+    }
+
+    public function trackingId(): ?string
+    {
+        return $this->envelope->last(EammMessageIdStamp::class)?->id;
     }
 
     public function shortClass(): string
@@ -64,6 +75,15 @@ final readonly class MessageView
     public function stamps(): array
     {
         return $this->envelope->all();
+    }
+
+    private static function queuedAtFromStreamId(string $id): ?\DateTimeImmutable
+    {
+        if (1 !== preg_match(self::STREAM_ID_PATTERN, $id, $match)) {
+            return null;
+        }
+
+        return \DateTimeImmutable::createFromTimestamp((int) $match[1] / 1000)->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     }
 
     private static function messageClassOf(object $message): string

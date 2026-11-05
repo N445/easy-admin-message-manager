@@ -6,17 +6,19 @@ namespace EasyAdminMessengerManager\History;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
-use EasyAdminMessengerManager\History\Entity\MessageHistory;
+use EasyAdminMessengerManager\History\Schema\HistoryTable;
 
 final readonly class HistoryRepository
 {
+    private const string LIST_COLUMNS = 'id, message_id, message_class, transport, status, attempt, duration_ms, memory_bytes, error_class, error_message, handled_at';
+
     public function __construct(private Connection $connection)
     {
     }
 
     public function insert(HistoryEntry $entry): void
     {
-        $this->connection->insert(MessageHistory::TABLE, $entry->toRow(new \DateTimeImmutable()));
+        $this->connection->insert(HistoryTable::NAME, $entry->toRow(new \DateTimeImmutable()));
     }
 
     /**
@@ -24,12 +26,20 @@ final readonly class HistoryRepository
      */
     public function page(HistoryFilter $filter, int $page, int $perPage): array
     {
-        return $filter->apply($this->select('id, message_class, transport, status, attempt, duration_ms, memory_bytes, error_class, error_message, handled_at'))
+        return $filter->apply($this->select(self::LIST_COLUMNS))
             ->orderBy('id', 'DESC')
             ->setFirstResult(max(0, $page - 1) * $perPage)
             ->setMaxResults($perPage)
             ->executeQuery()
             ->fetchAllAssociative();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function timeline(string $messageId, int $limit): array
+    {
+        return $this->page(new HistoryFilter(messageId: $messageId), 1, $limit);
     }
 
     /**
@@ -78,7 +88,7 @@ final readonly class HistoryRepository
     {
         $query = $dryRun
             ? $this->select('COUNT(*)')
-            : $this->connection->createQueryBuilder()->delete(MessageHistory::TABLE);
+            : $this->connection->createQueryBuilder()->delete(HistoryTable::NAME);
         $query = $filter->apply($query)->andWhere('handled_at < :before')->setParameter('before', $before->format('Y-m-d H:i:s'));
 
         return $dryRun ? (int) $query->executeQuery()->fetchOne() : (int) $query->executeStatement();
@@ -86,7 +96,7 @@ final readonly class HistoryRepository
 
     private function select(string $columns): QueryBuilder
     {
-        return $this->connection->createQueryBuilder()->select($columns)->from(MessageHistory::TABLE);
+        return $this->connection->createQueryBuilder()->select($columns)->from(HistoryTable::NAME);
     }
 
     private function since(QueryBuilder $query, \DateTimeImmutable $since): QueryBuilder

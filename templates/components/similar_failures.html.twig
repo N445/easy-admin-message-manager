@@ -1,0 +1,7 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+<span {{ attributes }}>
+    {% set count = computed.count %}
+    {% if count is not null %}
+        <a class="eamm-similar" href="{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('failed').set(field, value) }}">{% if count > constant('EasyAdminMessengerManager\\Component\\SimilarFailuresComponent::COUNT_LIMIT') %}{{ 'eamm.show.similar_many'|trans({'%formatted%': (count - 1)|eamm_number}) }}{% else %}{{ 'eamm.show.similar'|trans({'%count%': count, '%formatted%': count|eamm_number}) }}{% endif %}</a>
+    {% endif %}
+</span>

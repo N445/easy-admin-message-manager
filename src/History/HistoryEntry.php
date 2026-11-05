@@ -15,6 +15,7 @@ final readonly class HistoryEntry
         public ?int $memoryBytes,
         public ?\Throwable $error,
         public ?string $payload,
+        public ?string $messageId = null,
     ) {
     }
 
@@ -35,6 +36,7 @@ final readonly class HistoryEntry
             'error_trace' => $this->trace(),
             'payload' => $this->payload,
             'handled_at' => $handledAt->format('Y-m-d H:i:s'),
+            'message_id' => $this->messageId,
         ];
     }
 

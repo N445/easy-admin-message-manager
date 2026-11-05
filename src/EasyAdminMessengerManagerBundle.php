@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace EasyAdminMessengerManager;
 
-use EasyAdminMessengerManager\Batch\FailedMessagesBatch;
+use EasyAdminMessengerManager\Customization\MessageViewCustomizer;
 use EasyAdminMessengerManager\DependencyInjection\TransportLocatorPass;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -25,29 +25,12 @@ final class EasyAdminMessengerManagerBundle extends AbstractBundle
         $container->addCompilerPass(new TransportLocatorPass());
     }
 
-    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
-    {
-        $config = $this->mergedConfig($builder);
-        $this->routeBatchMessage($builder, $config['batch']['transport'] ?? null);
-
-        if (true !== ($config['history']['enabled'] ?? false)) {
-            return;
-        }
-
-        $builder->prependExtensionConfig('doctrine', ['orm' => ['mappings' => ['EasyAdminMessengerManager' => [
-            'type' => 'attribute',
-            'is_bundle' => false,
-            'dir' => __DIR__.'/History/Entity',
-            'prefix' => 'EasyAdminMessengerManager\History\Entity',
-            'alias' => 'EasyAdminMessengerManager',
-        ]]]]);
-    }
-
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->parameters()
             ->set('easy_admin_messenger_manager.permissions', $config['permissions'])
             ->set('easy_admin_messenger_manager.redaction_keys', $config['redaction']['keys'])
+            ->set('easy_admin_messenger_manager.batch_transport', $config['batch']['transport'])
             ->set('easy_admin_messenger_manager.batch_chunk_size', $config['batch']['chunk_size'])
             ->set('easy_admin_messenger_manager.max_scan', $config['max_scan'])
             ->set('easy_admin_messenger_manager.breakdown_sample', $config['breakdown_sample'])
@@ -57,6 +40,7 @@ final class EasyAdminMessengerManagerBundle extends AbstractBundle
             ->set('easy_admin_messenger_manager.history_exclude', $config['history']['exclude']);
 
         $container->import('../config/services.php');
+        $builder->registerForAutoconfiguration(MessageViewCustomizer::class)->addTag(MessageViewCustomizer::TAG);
 
         if (!$config['history']['enabled']) {
             return;
@@ -64,22 +48,5 @@ final class EasyAdminMessengerManagerBundle extends AbstractBundle
 
         $builder->setAlias('easy_admin_messenger_manager.history_connection', \sprintf('doctrine.dbal.%s_connection', $config['history']['connection']));
         $container->import('../config/history.php');
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mergedConfig(ContainerBuilder $builder): array
-    {
-        return array_replace_recursive([], ...$builder->getExtensionConfig($this->extensionAlias));
-    }
-
-    private function routeBatchMessage(ContainerBuilder $builder, ?string $transport): void
-    {
-        if (null === $transport) {
-            return;
-        }
-
-        $builder->prependExtensionConfig('framework', ['messenger' => ['routing' => [FailedMessagesBatch::class => $transport]]]);
     }
 }

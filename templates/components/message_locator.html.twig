@@ -1,0 +1,9 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+<span {{ attributes }}>
+    {% set view = computed.view %}
+    {% if view %}
+        <a href="{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id) }}">{{ 'eamm.history.open_message'|trans({'%transport%': view.transport}) }}</a>
+    {% elseif not this.loadFailed %}
+        <span class="eamm-muted">{{ 'eamm.history.message_gone'|trans }}</span>
+    {% endif %}
+</span>

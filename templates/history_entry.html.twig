@@ -12,24 +12,38 @@
 {% block eamm_content %}
     {% set tones = {handled: 'success', retrying: 'warning', failed: 'danger'} %}
     <div class="d-flex gap-2 mb-3">
-        <a class="btn btn-sm btn-secondary" href="{{ ea_url().setController(eamm_controller).setAction('history') }}">← {{ 'eamm.tab.history'|trans }}</a>
+        <a class="btn btn-sm btn-secondary" href="{{ return_to ?? ea_url().unsetAll().setController(eamm_controller).setAction('history') }}">← {{ (return_to ? 'eamm.show.back' : 'eamm.tab.history')|trans }}</a>
     </div>
 
-    <table class="table datagrid">
-        <tbody>
-            <tr><th>{{ 'eamm.column.status'|trans }}</th><td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td></tr>
-            <tr><th>{{ 'eamm.column.class'|trans }}</th><td class="eamm-mono">{{ entry.message_class }}</td></tr>
-            <tr><th>{{ 'eamm.column.transport'|trans }}</th><td>{{ entry.transport }}</td></tr>
-            <tr><th>{{ 'eamm.column.handled_at'|trans }}</th><td>{{ entry.handled_at|date('Y-m-d H:i:s') }}</td></tr>
-            <tr><th>{{ 'eamm.column.attempt'|trans }}</th><td>{{ entry.attempt }}</td></tr>
-            <tr><th>{{ 'eamm.column.duration'|trans }}</th><td>{{ entry.duration_ms is null ? '—' : entry.duration_ms ~ ' ms' }}</td></tr>
-            <tr><th>{{ 'eamm.column.memory'|trans }}</th><td>{{ entry.memory_bytes is null ? '—' : (entry.memory_bytes / 1048576)|number_format(1) ~ ' MB' }}</td></tr>
-            {% if entry.error_class %}
-                <tr><th>{{ 'eamm.column.exception'|trans }}</th><td class="eamm-mono">{{ entry.error_class }}</td></tr>
-                <tr><th>{{ 'eamm.column.error'|trans }}</th><td>{{ entry.error_message }}</td></tr>
-            {% endif %}
-        </tbody>
-    </table>
+    <div class="eamm-table-wrap">
+        <table class="table datagrid">
+            <tbody>
+                <tr><th>{{ 'eamm.column.status'|trans }}</th><td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td></tr>
+                <tr><th>{{ 'eamm.column.class'|trans }}</th><td class="eamm-mono">{{ entry.message_class }} {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: entry.message_class} %}</td></tr>
+                <tr><th>{{ 'eamm.column.transport'|trans }}</th><td>{{ entry.transport }}</td></tr>
+                <tr><th>{{ 'eamm.column.handled_at'|trans }}</th><td>{{ entry.handled_at|eamm_datetime }}</td></tr>
+                <tr><th>{{ 'eamm.column.attempt'|trans }}</th><td>{{ entry.attempt|eamm_number }}</td></tr>
+                <tr><th>{{ 'eamm.column.duration'|trans }}</th><td>{{ entry.duration_ms is null ? '—' : entry.duration_ms|eamm_number ~ ' ms' }}</td></tr>
+                {% if entry.message_id %}
+                    <tr>
+                        <th>{{ 'eamm.column.tracking_id'|trans }}</th>
+                        <td>
+                            <span class="eamm-mono">{{ entry.message_id }}</span> {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: entry.message_id} %}
+                            <a class="ms-2" href="{{ ea_url().unsetAll().setController(eamm_controller).setAction('history').set('message', entry.message_id) }}">{{ 'eamm.timeline.see_all'|trans }}</a>
+                            {% if entry.status == 'failed' %}
+                                <span class="ms-2">{{ component('EAMM:MessageLocator', {controller: eamm_controller, dashboard: eamm_dashboard, trackingId: entry.message_id, loading: 'defer', 'loading-tag': 'span'}) }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                <tr><th>{{ 'eamm.column.memory'|trans }}</th><td>{{ entry.memory_bytes is null ? '—' : (entry.memory_bytes / 1048576)|eamm_number(1) ~ ' MB' }}</td></tr>
+                {% if entry.error_class %}
+                    <tr><th>{{ 'eamm.column.exception'|trans }}</th><td class="eamm-mono">{{ entry.error_class }} {% include '@EasyAdminMessengerManager/_partials/copy.html.twig' with {text: entry.error_class} %}</td></tr>
+                    <tr><th>{{ 'eamm.column.error'|trans }}</th><td>{{ entry.error_message }}</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
 
     {% if entry.error_trace %}
         <h2 class="eamm-section-title">{{ 'eamm.show.trace'|trans }}</h2>

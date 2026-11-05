@@ -7,6 +7,7 @@ namespace EasyAdminMessengerManager\Message\Source;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Query\QueryBuilder;
 use EasyAdminMessengerManager\Message\MessageFilter;
+use EasyAdminMessengerManager\Message\MessageOrder;
 use EasyAdminMessengerManager\Message\MessageView;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\MessageDecodingFailedException;
@@ -30,19 +31,30 @@ final readonly class DoctrineSource implements MessageSource
         return (int) $this->query($filter)->select('COUNT(*)')->executeQuery()->fetchOne();
     }
 
-    public function slice(MessageFilter $filter, int $offset, int $limit): array
+    public function countUpTo(MessageFilter $filter, int $limit): int
+    {
+        $matches = $this->query($filter)->select('1')->setMaxResults($limit);
+
+        return (int) $this->connection->executeQuery(
+            'SELECT COUNT(*) FROM ('.$matches->getSQL().') eamm_matches',
+            $matches->getParameters(),
+            $matches->getParameterTypes(),
+        )->fetchOne();
+    }
+
+    public function slice(MessageFilter $filter, int $offset, int $limit, MessageOrder $order = MessageOrder::NewestFirst): array
     {
         $page = $this->query($filter)
             ->select('id')
-            ->orderBy('id', 'DESC')
+            ->orderBy('id', $order->sql())
             ->setFirstResult($offset)
             ->setMaxResults($limit);
 
         $rows = $this->connection->createQueryBuilder()
-            ->select('m.id', 'm.body', 'm.headers')
+            ->select('m.id', 'm.body', 'm.headers', 'm.created_at')
             ->from($this->table, 'm')
             ->innerJoin('m', '('.$page->getSQL().')', 'eamm_page', 'eamm_page.id = m.id')
-            ->orderBy('m.id', 'DESC')
+            ->orderBy('m.id', $order->sql())
             ->setParameters($page->getParameters(), $page->getParameterTypes())
             ->executeQuery()
             ->fetchAllAssociative();
@@ -70,6 +82,13 @@ final readonly class DoctrineSource implements MessageSource
         return true;
     }
 
+    public function oldestQueuedAt(): ?\DateTimeImmutable
+    {
+        $oldest = $this->query(new MessageFilter())->select('MIN(created_at)')->executeQuery()->fetchOne();
+
+        return \is_string($oldest) ? self::storedDate($oldest) : null;
+    }
+
     private function query(MessageFilter $filter): QueryBuilder
     {
         $query = $this->connection->createQueryBuilder()
@@ -81,11 +100,16 @@ final readonly class DoctrineSource implements MessageSource
     }
 
     /**
-     * @param array{id: int|string, body: string, headers: string} $row
+     * @param array{id: int|string, body: string, headers: string, created_at: string} $row
      */
     private function view(array $row): MessageView
     {
-        return MessageView::fromEnvelope($this->decode($row), $this->transport);
+        return MessageView::fromEnvelope($this->decode($row), $this->transport, self::storedDate($row['created_at']));
+    }
+
+    private static function storedDate(string $value): \DateTimeImmutable
+    {
+        return new \DateTimeImmutable($value, new \DateTimeZone('UTC'))->setTimezone(new \DateTimeZone(date_default_timezone_get()));
     }
 
     /**

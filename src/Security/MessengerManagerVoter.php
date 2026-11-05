@@ -30,7 +30,7 @@ final class MessengerManagerVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
     {
-        $role = $this->roles[Permission::from($attribute)->configKey()] ?? 'ROLE_ADMIN';
+        $role = $this->roles[Permission::from($attribute)->configKey()];
 
         return $this->accessDecisionManager->decide($token, [$role]);
     }

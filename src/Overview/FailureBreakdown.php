@@ -12,11 +12,13 @@ final readonly class FailureBreakdown
      * @param array<string, int> $byClass
      * @param array<string, int> $byException
      * @param array<string, int> $byOrigin
+     * @param array<string, int> $byMessage
      */
     public function __construct(
         public array $byClass,
         public array $byException,
         public array $byOrigin,
+        public array $byMessage = [],
     ) {
     }
 
@@ -29,7 +31,18 @@ final readonly class FailureBreakdown
             self::countBy($views, static fn (MessageView $view): string => $view->messageClass),
             self::countBy($views, static fn (MessageView $view): string => $view->exceptionClass ?? '?'),
             self::countBy($views, static fn (MessageView $view): string => $view->originalTransport ?? '?'),
+            self::countBy($views, static fn (MessageView $view): string => (string) ErrorMessagePattern::of($view->exceptionMessage ?? '')),
         );
+    }
+
+    public static function searchTerm(string $messagePattern): string
+    {
+        return ErrorMessagePattern::of($messagePattern)->searchTerm();
+    }
+
+    public function isEmpty(): bool
+    {
+        return [] === $this->byClass;
     }
 
     /**

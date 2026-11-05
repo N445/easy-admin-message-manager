@@ -1,24 +1,4 @@
 (() => {
-    const copyText = async (text) => {
-        if (navigator.clipboard && window.isSecureContext) {
-            return navigator.clipboard.writeText(text);
-        }
-
-        const area = Object.assign(document.createElement('textarea'), { value: text });
-        area.style.position = 'fixed';
-        area.style.opacity = '0';
-        document.body.appendChild(area);
-        area.select();
-        document.execCommand('copy');
-        area.remove();
-    };
-
-    const flash = (button, label) => {
-        const original = button.textContent;
-        button.textContent = label;
-        setTimeout(() => { button.textContent = original; }, 1500);
-    };
-
     const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     const setup = (block) => {
@@ -45,7 +25,7 @@
             const action = button.dataset.eammJsonAction;
             if ('expand' === action) viewer.expandAll();
             if ('collapse' === action) viewer.collapseAll();
-            if ('copy' === action) copyText(raw).then(() => flash(button, button.dataset.copiedLabel));
+            if ('copy' === action) window.eamm.copy(button, raw);
         });
 
         search?.addEventListener('input', () => { matches = null; });

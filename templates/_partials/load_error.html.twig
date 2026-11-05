@@ -1,0 +1,7 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% if this.loadFailed %}
+    <div class="alert alert-danger eamm-notice" role="alert">
+        <span>{{ 'eamm.error.load'|trans }}</span>
+        <button type="button" class="btn btn-sm btn-secondary" data-loading="addAttribute(disabled)" data-action="live#$render">{{ 'eamm.error.retry'|trans }}</button>
+    </div>
+{% endif %}

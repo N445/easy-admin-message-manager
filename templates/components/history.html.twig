@@ -1,5 +1,6 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
-<div {{ attributes }} data-poll="delay({{ refreshSeconds * 1000 }})|$render">
+{% set pagination = computed.pagination %}
+<div {{ attributes }} data-eamm-poll="{{ refreshSeconds }}" {{ pagination.page > 1 ? 'data-eamm-poll-paused' }}>
     <div class="eamm-filters">
         <div>
             <label for="eamm-status">{{ 'eamm.column.status'|trans }}</label>
@@ -12,7 +13,7 @@
         </div>
         <div>
             <label for="eamm-class">{{ 'eamm.column.class'|trans }}</label>
-            <input class="eamm-input" id="eamm-class" data-model="debounce(400)|messageClass" value="{{ messageClass }}">
+            <input class="eamm-input" id="eamm-class" data-model="on(change)|messageClass" value="{{ messageClass }}">
         </div>
         <div>
             <label for="eamm-transport">{{ 'eamm.column.transport'|trans }}</label>
@@ -23,46 +24,76 @@
                 {% endfor %}
             </select>
         </div>
-        <span class="eamm-live-dot" title="{{ 'eamm.overview.live'|trans({'%seconds%': refreshSeconds}) }}"></span>
+        <div>
+            <label for="eamm-exception">{{ 'eamm.column.error'|trans }}</label>
+            <input class="eamm-input" id="eamm-exception" data-model="on(change)|exception" value="{{ exception }}">
+        </div>
+        <div>
+            <label for="eamm-from">{{ 'eamm.filter.from'|trans }}</label>
+            <input class="eamm-input" type="datetime-local" id="eamm-from" data-model="on(change)|from" value="{{ from }}">
+        </div>
+        <div>
+            <label for="eamm-to">{{ 'eamm.filter.to'|trans }}</label>
+            <input class="eamm-input" type="datetime-local" id="eamm-to" data-model="on(change)|to" value="{{ to }}">
+        </div>
+        <div>
+            <label for="eamm-duration">{{ 'eamm.filter.min_duration'|trans }}</label>
+            <input class="eamm-input" type="number" min="1" step="1" id="eamm-duration" data-model="on(change)|duration" value="{{ duration }}">
+        </div>
+        <div>
+            <label for="eamm-message-id">{{ 'eamm.column.tracking_id'|trans }}</label>
+            <input class="eamm-input eamm-mono" id="eamm-message-id" data-model="on(change)|messageId" value="{{ messageId }}">
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" data-loading="addAttribute(disabled)" data-action="live#$render">{{ 'eamm.filter.apply'|trans }}</button>
+        {% if computed.filter.toArray is not empty %}
+            <button type="button" class="btn btn-sm btn-secondary" data-loading="addAttribute(disabled)" data-action="live#action" data-live-action-param="resetFilters">{{ 'eamm.filter.reset'|trans }}</button>
+        {% endif %}
+        {% if refreshSeconds > 0 %}
+            {% include '@EasyAdminMessengerManager/_partials/poll_toggle.html.twig' with {seconds: refreshSeconds} %}
+        {% endif %}
     </div>
 
-    {% set pagination = computed.pagination %}
     {% set entries = computed.entries %}
     {% set tones = {handled: 'success', retrying: 'warning', failed: 'danger'} %}
+    {% set return_to = computed.returnTo %}
+    {% include '@EasyAdminMessengerManager/_partials/load_error.html.twig' %}
 
-    <table class="table datagrid {{ entries is empty ? 'datagrid-empty' }}">
-        <thead>
-            <tr>
-                <th>{{ 'eamm.column.handled_at'|trans }}</th>
-                <th>{{ 'eamm.column.status'|trans }}</th>
-                <th>{{ 'eamm.column.class'|trans }}</th>
-                <th>{{ 'eamm.column.transport'|trans }}</th>
-                <th class="text-end">{{ 'eamm.column.attempt'|trans }}</th>
-                <th class="text-end">{{ 'eamm.column.duration'|trans }}</th>
-                <th>{{ 'eamm.column.error'|trans }}</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for entry in entries %}
-            <tr>
-                <td class="text-nowrap"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('historyEntry').set('entryId', entry.id) }}">{{ entry.handled_at|date('Y-m-d H:i:s') }}</a></td>
-                <td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td>
-                <td class="eamm-mono" title="{{ entry.message_class }}"><a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('historyEntry').set('entryId', entry.id) }}">{{ entry.message_class|split('\\')|last }}</a></td>
-                <td>{{ entry.transport }}</td>
-                <td class="text-end">{{ entry.attempt }}</td>
-                <td class="text-end">{{ entry.duration_ms is null ? '—' : entry.duration_ms ~ ' ms' }}</td>
-                <td>
-                    {% if entry.error_class %}
-                        <div class="eamm-mono">{{ entry.error_class }}</div>
-                        <div class="eamm-muted">{{ entry.error_message|length > 180 ? entry.error_message|slice(0, 180) ~ '…' : entry.error_message }}</div>
-                    {% endif %}
-                </td>
-            </tr>
-        {% else %}
-            <tr><td colspan="7" class="text-center eamm-muted py-4">{{ 'eamm.history.empty'|trans }}</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <div class="eamm-table-wrap" data-loading="delay(300)|addClass(eamm-is-loading)">
+        <table class="table datagrid {{ entries is empty ? 'datagrid-empty' }}">
+            <thead>
+                <tr>
+                    <th>{{ 'eamm.column.handled_at'|trans }}</th>
+                    <th>{{ 'eamm.column.status'|trans }}</th>
+                    <th>{{ 'eamm.column.class'|trans }}</th>
+                    <th class="eamm-col-optional">{{ 'eamm.column.transport'|trans }}</th>
+                    <th class="text-end eamm-col-optional">{{ 'eamm.column.attempt'|trans }}</th>
+                    <th class="text-end eamm-col-optional">{{ 'eamm.column.duration'|trans }}</th>
+                    <th>{{ 'eamm.column.error'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for entry in entries %}
+                {% set entry_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('historyEntry').set('entryId', entry.id).set('returnTo', return_to) %}
+                <tr>
+                    <td class="text-nowrap"><a href="{{ entry_url }}">{{ entry.handled_at|eamm_datetime }}</a></td>
+                    <td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td>
+                    <td class="eamm-mono" title="{{ entry.message_class }}"><a href="{{ entry_url }}">{{ entry.message_class|split('\\')|last }}</a></td>
+                    <td class="eamm-col-optional">{{ entry.transport }}</td>
+                    <td class="text-end eamm-col-optional">{{ entry.attempt|eamm_number }}</td>
+                    <td class="text-end text-nowrap eamm-col-optional">{{ entry.duration_ms is null ? '—' : entry.duration_ms|eamm_number ~ ' ms' }}</td>
+                    <td>
+                        {% if entry.error_class %}
+                            <div class="eamm-mono">{{ entry.error_class }}</div>
+                            <div class="eamm-muted eamm-clamp" title="{{ entry.error_message }}">{{ entry.error_message }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr><td colspan="7" class="text-center eamm-muted py-4">{{ 'eamm.history.empty'|trans }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {% include '@EasyAdminMessengerManager/_partials/pagination.html.twig' %}
 </div>

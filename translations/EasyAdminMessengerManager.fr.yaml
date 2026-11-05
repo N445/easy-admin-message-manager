@@ -7,50 +7,98 @@ eamm:
     overview:
         title: Messenger
         transports: Transports
-        failure: échecs
+        failure: transport d'échec
         see_failed: Voir les messages en échec
         browse: Parcourir les messages en attente
         not_listable: Non listable
         failed_title: 'Messages en échec (%count%)'
-        live: 'Actualisé toutes les %seconds% s'
         last_24h: Dernières 24 heures
+        recent_failures: '%formatted% en échec ces dernières 24 h|%formatted% en échec ces dernières 24 h'
+        oldest: 'Plus ancien : %age%'
+        stuck: Bloqué ?
+        stuck_help: 'Le plus ancien message attend depuis %age% : les workers tournent-ils ?'
+        trend_up: 'En hausse, %count% à l''actualisation précédente'
+        trend_down: 'En baisse, %count% à l''actualisation précédente'
+    poll:
+        pause: 'Suspendre l''actualisation (toutes les %seconds% s)'
+        resume: Reprendre l'actualisation
+    setup:
+        live_missing: 'Le JavaScript des Live Components n''est pas chargé sur cette page : boutons, filtres et actualisation ne font rien. Voir l''étape 3 du README.'
+        assets_missing: 'Les assets du bundle sont absents ou périmés : lancez « php bin/console assets:install public ».'
+    notice:
+        close: Fermer
+    copy:
+        label: 'Copier %value%'
+        copied: Copié !
+    error:
+        load: 'Les données n''ont pas pu être chargées. L''erreur a été journalisée.'
+        retry: Réessayer
     breakdown:
+        title: Répartition des échecs
+        filter_on: 'Filtrer sur « %value% »'
         sampled: 'Calculé sur les %count% plus récents des %total% messages.'
         by_class: Par classe de message
         by_exception: Par exception
         by_origin: Par transport d'origine
+        by_message: Par message d'erreur
+        see_all: 'Voir les %count%'
     failed:
-        title: 'Messages en échec (%count%)'
-        empty: Aucun message en échec.
-        undecodable: illisible
-        undecodable_help: Ce message ne peut plus être décodé (sa classe a sans doute été renommée ou supprimée). Il ne peut pas être relancé, seulement supprimé.
-        confirm_retry: Relancer ce message maintenant ? Son handler sera réexécuté, effets de bord compris.
+        empty: Aucun message en échec. Tous les handlers fonctionnent.
+        no_match: Aucun message ne correspond à ces filtres.
+        undecodable: non décodable
+        undecodable_help: Ce message ne peut plus être décodé (sa classe a sans doute été renommée ou supprimée). Il ne peut pas être réexécuté, seulement supprimé.
+        confirm_retry: Exécuter ce message maintenant ? Son handler est réexécuté dans cette requête, effets de bord compris.
         confirm_remove: Supprimer définitivement ce message ?
     batch:
-        selection: 'Sélection :'
+        selected: '%formatted% sélectionné|%formatted% sélectionnés'
+        other_pages: '(%formatted% sur d''autres pages)'
+        hint: Cochez des messages pour les remettre en file ou les supprimer.
         select_page: Sélectionner la page
+        select_one: 'Sélectionner %message%'
+        selection_cleared: La sélection a été vidée car les filtres ont changé.
+        count_changed: 'Rien n''a été fait : %count% messages correspondent maintenant au lieu de %expected%. Vérifiez la liste et recommencez.'
+        filter_required: Définissez un filtre avant d'agir sur tous les messages correspondants.
+        see_history: Voir l'historique
         clear_selection: Vider la sélection
-        requeue_selected: Renvoyer dans la file
+        requeue_selected: Remettre en file
         remove_selected: Supprimer
         all_matching: 'Les %count% messages correspondants :'
-        requeue_all: Tout renvoyer dans la file
+        requeue_all: Tout remettre en file
         remove_all: Tout supprimer
-        confirm_requeue: Renvoyer les messages sélectionnés dans leur file d'origine ?
+        confirm_requeue: Remettre les messages sélectionnés dans leur transport d'origine ?
         confirm_remove: Supprimer définitivement les messages sélectionnés ?
-        confirm_requeue_all: 'Renvoyer les %count% messages correspondants dans leur file d''origine ?'
-        confirm_remove_all: 'Supprimer définitivement les %count% messages correspondants ?'
+        confirm_requeue_all: 'Remettre les %count% messages correspondant à %filters% dans leur transport d''origine ?'
+        confirm_remove_all: 'Supprimer définitivement les %count% messages correspondant à %filters% ? Tapez %expected% pour confirmer.'
     action:
-        retry: Relancer
+        retry: Exécuter maintenant
+        retry_help: Exécute le handler immédiatement, dans cette requête.
+        retry_one: 'Exécuter %message% maintenant'
+        remove_one: 'Supprimer %message%'
+        requeue_help: Renvoyés dans leur transport d'origine, traités par les workers.
         remove: Supprimer
     filter:
         from: Du
         to: Au
-        apply: Filtrer
         reset: Réinitialiser
+        apply: Filtrer
+        min_duration: Durée min. (ms)
+        remove: 'Retirer le filtre « %filter% »'
+        presets: Périodes rapides
+        preset:
+            hour: Dernière heure
+            day: Dernières 24 h
+            week: 7 derniers jours
+    sort:
+        newest_first: Afficher les plus récents d'abord
+        oldest_first: Afficher les plus anciens d'abord
     show:
         trace: Trace
-        payload: Message
+        payload: Contenu
         stamps: Stamps
+        back: Retour à la liste
+        similar: '%formatted% similaire|%formatted% similaires'
+        similar_many: 'plus de %formatted% similaires'
+        application_frame: Première ligne dans votre code
     json:
         search: Rechercher (Entrée pour le suivant)
         expand: Tout déplier
@@ -61,17 +109,23 @@ eamm:
         no_transport: Aucun transport listable.
         refresh: Rafraîchir
         partial: 'Ce transport ne peut pas être interrogé en SQL : seuls ses %count% premiers messages sont parcourus et filtrés.'
-    transport:
-        title: 'Transport %name%'
-        preview: '%limit% premiers messages sur %count%.'
         empty: Aucun message en attente.
+        confirm_remove: Supprimer définitivement ce message en attente ? Un worker est peut-être en train de le traiter.
+        confirm_remove_selected: Supprimer définitivement les messages en attente sélectionnés ? Un worker est peut-être en train de traiter certains d'entre eux.
     history:
         no_payload: Le contenu du message n'a pas été capturé (history.capture_payload).
         title: Historique
         empty: Aucune entrée d'historique.
+        open_message: 'Toujours dans le transport « %transport% » : l''ouvrir'
+        message_gone: N'est plus dans le transport d'échec.
+    timeline:
+        title: Chronologie
+        untracked: 'Ce message n''a pas d''identifiant de suivi (il a été envoyé avant l''activation de l''historique) : ses tentatives ne peuvent pas être retracées.'
+        empty: Aucune tentative enregistrée pour ce message pour l'instant.
+        see_all: Chronologie
     status:
         handled: Traité
-        retrying: En réessai
+        retrying: Nouvelle tentative
         failed: Échoué
     column:
         memory: Mémoire
@@ -81,18 +135,44 @@ eamm:
         exception: Exception
         origin: Transport d'origine
         transport: Transport
-        retries: Essais
+        retries: Tentatives
         failed_at: Échoué le
         total: Total
         failures: Échecs
         avg_duration: Durée moy.
         status: Statut
-        handled_at: Date
-        attempt: Essai
+        handled_at: Traité le
+        attempt: Tentative
         duration: Durée
+        queued_at: En file depuis le
+        age: Âge
+        redeliveries: Relivraisons
+        tracking_id: Identifiant de suivi
     pagination:
+        label: Pagination
         summary: 'Page %page% sur %pages% (%total% messages)'
+        first: Première page
+        previous: Page précédente
+        next: Page suivante
+        last: Dernière page
+        page: 'Page %page%'
+        go_to: Aller à la page
+    time:
+        seconds: 'il y a %count% s'
+        minutes: 'il y a %count% min'
+        hours: 'il y a %count% h'
+        days: 'il y a %count% j'
+    duration:
+        seconds: '%count% s'
+        minutes: '%count% min'
+        hours: '%count% h'
+        days: '%count% j'
     flash:
         retried: Le message a été traité avec succès.
         removed: Le message a été supprimé.
-        batch: '%count% message(s) pris en charge.'
+        batch_done_requeue: '%count% message remis en file.|%count% messages remis en file.'
+        batch_done_remove: '%count% message supprimé.|%count% messages supprimés.'
+        batch_queued_requeue: '%count% message à remettre en file via « %transport% ».|%count% messages à remettre en file via « %transport% ».'
+        batch_queued_remove: '%count% message à supprimer via « %transport% ».|%count% messages à supprimer via « %transport% ».'
+        pending_removed: '%count% message supprimé.|%count% messages supprimés.'
+        pending_partially_removed: '%count% messages supprimés sur %requested% : les autres n''existaient plus (voir les logs).'

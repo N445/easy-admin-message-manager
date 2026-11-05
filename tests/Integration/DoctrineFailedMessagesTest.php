@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace EasyAdminMessengerManager\Tests\Integration;
 
 use EasyAdminMessengerManager\Message\MessageFilter;
+use EasyAdminMessengerManager\Message\MessageOrder;
 use EasyAdminMessengerManager\Message\Source\MessagePages;
 use EasyAdminMessengerManager\Message\Source\MessageSources;
 use EasyAdminMessengerManager\Tests\App\TestMessage;
@@ -27,6 +28,58 @@ final class DoctrineFailedMessagesTest extends MessengerTestCase
         self::assertSame(3, $page->pagination->pages);
         self::assertSame(['message-4', 'message-3', 'message-2'], array_map(static fn ($view): string => $view->envelope->getMessage()->label, $page->views));
         self::assertNotSame('', $page->views[0]->id);
+    }
+
+    public function testQueuedDateComesFromTheStoredUtcCreationDate(): void
+    {
+        $this->transport('pending')->send(new \Symfony\Component\Messenger\Envelope(new TestMessage('old')));
+        $this->transport('pending')->send(new \Symfony\Component\Messenger\Envelope(new TestMessage('new')));
+        $connection = self::getContainer()->get('doctrine')->getConnection();
+        $connection->executeStatement("UPDATE messenger_messages SET created_at = '2026-01-01 08:00:00' WHERE id = (SELECT MIN(id) FROM messenger_messages)");
+        $pending = self::getContainer()->get(MessageSources::class)->transport('pending');
+
+        $views = $pending->page(new MessageFilter(), 1, 10)->views;
+
+        self::assertSame('2026-01-01T08:00:00+00:00', $views[1]->queuedAt?->setTimezone(new \DateTimeZone('UTC'))->format(\DATE_ATOM));
+        self::assertEqualsWithDelta(time(), $views[0]->queuedAt?->getTimestamp(), 5);
+        self::assertSame($views[1]->queuedAt?->getTimestamp(), $pending->oldestQueuedAt()?->getTimestamp());
+        self::assertNull($this->failed()->oldestQueuedAt());
+    }
+
+    public function testCountUpToStopsAtTheLimit(): void
+    {
+        foreach (range(1, 3) as $number) {
+            $this->addFailed(new TestMessage('message-'.$number), 'async', 'Timeout');
+        }
+
+        self::assertSame(2, $this->failed()->countUpTo(MessageFilter::fromArray(['exception' => 'timeout']), 2));
+        self::assertSame(3, $this->failed()->countUpTo(MessageFilter::fromArray(['exception' => 'timeout']), 10));
+        self::assertSame(0, $this->failed()->countUpTo(MessageFilter::fromArray(['exception' => 'nope']), 10));
+    }
+
+    public function testPagesOldestFirstOnDemand(): void
+    {
+        foreach (range(1, 3) as $number) {
+            $this->addFailed(new TestMessage('message-'.$number));
+        }
+
+        $page = $this->failed()->page(new MessageFilter(), 1, 2, MessageOrder::OldestFirst);
+
+        self::assertSame(['message-1', 'message-2'], array_map(static fn ($view): string => $view->envelope->getMessage()->label, $page->views));
+    }
+
+    public function testPeriodFiltersAreComparedToTheStoredUtcDate(): void
+    {
+        $this->addFailed(new TestMessage('now'));
+        $timezone = date_default_timezone_get();
+        date_default_timezone_set('Pacific/Kiritimati');
+
+        try {
+            self::assertSame(1, $this->failed()->count(MessageFilter::fromArray(['from' => date('Y-m-d\TH:i', time() - 120)])));
+            self::assertSame(0, $this->failed()->count(MessageFilter::fromArray(['from' => date('Y-m-d\TH:i', time() + 120)])));
+        } finally {
+            date_default_timezone_set($timezone);
+        }
     }
 
     public function testFiltersInSql(): void

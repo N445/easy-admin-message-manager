@@ -1,23 +1,46 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
-<div {{ attributes }} data-poll="delay({{ refreshSeconds * 1000 }})|$render">
+{% macro url(dashboard, controller, action, parameters) %}{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction(action).setAll(parameters) }}{% endmacro %}
+<div {{ attributes }} data-eamm-poll="{{ refreshSeconds }}">
+    {% set transports = computed.transports %}
+    {% set failed_total = computed.failedTotal %}
+    {% set history_stats = computed.historyStats %}
+    {% set since = computed.since %}
+    {% include '@EasyAdminMessengerManager/_partials/load_error.html.twig' %}
     <h2 class="eamm-section-title">
         {{ 'eamm.overview.transports'|trans }}
-        <span class="eamm-live-dot" title="{{ 'eamm.overview.live'|trans({'%seconds%': refreshSeconds}) }}"></span>
+        {% if refreshSeconds > 0 %}
+            {% include '@EasyAdminMessengerManager/_partials/poll_toggle.html.twig' with {seconds: refreshSeconds} %}
+        {% endif %}
     </h2>
-    <div class="eamm-cards">
-        {% for summary in computed.transports %}
-            <div class="eamm-card {{ summary.failure and summary.count ? 'eamm-card-failure' }}">
+    <div class="eamm-cards" data-loading="delay(300)|addClass(eamm-is-loading)">
+        {% for summary in transports %}
+            {% set oldest = this.oldestQueuedAt(summary) %}
+            {% set stuck = this.isStuck(summary) %}
+            {% set trend = this.trend(summary) %}
+            <div class="eamm-card {{ summary.failure and summary.count ? 'eamm-card-failure' }} {{ stuck ? 'eamm-card-stuck' }}">
                 <div class="eamm-card-name">
                     <span>{{ summary.name }}</span>
                     {% if summary.failure %}<span class="badge badge-danger">{{ 'eamm.overview.failure'|trans }}</span>{% endif %}
+                    {% if stuck %}<span class="badge badge-warning" title="{{ 'eamm.overview.stuck_help'|trans({'%age%': oldest|eamm_age}) }}">{{ 'eamm.overview.stuck'|trans }}</span>{% endif %}
                 </div>
-                <div class="eamm-card-value">{{ summary.count is null ? '—' : summary.count|number_format(0, '', ' ') }}</div>
+                <div class="eamm-card-value">
+                    {{ summary.count|eamm_number }}
+                    {% if trend %}
+                        {% set trend_label = ('eamm.overview.trend_' ~ trend)|trans({'%count%': this.previousCount(summary)|eamm_number}) %}
+                        <span class="eamm-trend is-{{ trend }}" title="{{ trend_label }}" aria-label="{{ trend_label }}" role="img">{{ trend == 'up' ? '↑' : '↓' }}</span>
+                    {% endif %}
+                </div>
+                {% if oldest %}
+                    <div class="eamm-card-age {{ stuck ? 'is-stuck' }}">{{ 'eamm.overview.oldest'|trans({'%age%': oldest|eamm_age}) }}</div>
+                {% endif %}
                 {% if summary.error %}
-                    <div class="eamm-error">{{ summary.error }}</div>
+                    <div class="eamm-error eamm-clamp" title="{{ summary.error }}">{{ summary.error }}</div>
                 {% elseif summary.failure %}
-                    <a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('failed') }}">{{ 'eamm.overview.see_failed'|trans }}</a>
+                    {% set recent_failures = computed.recentFailures %}
+                    <a class="d-block" href="{{ _self.url(dashboard, controller, 'failed', {from: since}) }}">{{ 'eamm.overview.recent_failures'|trans({'%count%': recent_failures, '%formatted%': recent_failures|eamm_number}) }}</a>
+                    <a href="{{ _self.url(dashboard, controller, 'failed', {}) }}">{{ 'eamm.overview.see_failed'|trans }}</a>
                 {% elseif summary.listable %}
-                    <a href="{{ ea_url().setDashboard(dashboard).setController(controller).setAction('messages').set('transport', summary.name) }}">{{ 'eamm.overview.browse'|trans }}</a>
+                    <a href="{{ ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('messages').set('transport', summary.name) }}">{{ 'eamm.overview.browse'|trans }}</a>
                 {% else %}
                     <span class="eamm-muted">{{ 'eamm.overview.not_listable'|trans }}</span>
                 {% endif %}
@@ -25,40 +48,52 @@
         {% endfor %}
     </div>
 
-    {% set failed_total = computed.failedTotal %}
-    <h2 class="eamm-section-title">{{ 'eamm.overview.failed_title'|trans({'%count%': failed_total|number_format(0, '', ' ')}) }}</h2>
-    {% include '@EasyAdminMessengerManager/_partials/breakdown.html.twig' with {breakdown: computed.breakdown, total: failed_total, sample_size: computed.sampleSize} %}
-
-    {% set history_stats = computed.historyStats %}
     {% if history_stats %}
         <h2 class="eamm-section-title">{{ 'eamm.overview.last_24h'|trans }}</h2>
-        <div class="eamm-cards">
+        <div class="eamm-cards" data-loading="delay(300)|addClass(eamm-is-loading)">
             {% for status, tone in {handled: 'success', retrying: 'warning', failed: 'danger'} %}
-                <div class="eamm-card">
+                <a class="eamm-card eamm-card-link" href="{{ _self.url(dashboard, controller, 'history', {status: status, from: since}) }}">
                     <div class="eamm-card-name"><span>{{ ('eamm.status.' ~ status)|trans }}</span><span class="badge badge-{{ tone }}">{{ status }}</span></div>
-                    <div class="eamm-card-value">{{ (history_stats.statuses[status] ?? 0)|number_format(0, '', ' ') }}</div>
-                </div>
+                    <div class="eamm-card-value">{{ (history_stats.statuses[status] ?? 0)|eamm_number }}</div>
+                </a>
             {% endfor %}
         </div>
         {% if history_stats.classes is not empty %}
-            <table class="table datagrid">
-                <thead><tr>
-                    <th>{{ 'eamm.column.class'|trans }}</th>
-                    <th class="text-end">{{ 'eamm.column.total'|trans }}</th>
-                    <th class="text-end">{{ 'eamm.column.failures'|trans }}</th>
-                    <th class="text-end">{{ 'eamm.column.avg_duration'|trans }}</th>
-                </tr></thead>
-                <tbody>
-                {% for row in history_stats.classes %}
-                    <tr>
-                        <td class="eamm-mono">{{ row.message_class }}</td>
-                        <td class="text-end">{{ row.total }}</td>
-                        <td class="text-end {{ row.failures > 0 ? 'eamm-error' }}">{{ row.failures }}</td>
-                        <td class="text-end">{{ row.avg_ms is null ? '—' : (row.avg_ms|round ~ ' ms') }}</td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+            <div class="eamm-table-wrap" data-loading="delay(300)|addClass(eamm-is-loading)">
+                <table class="table datagrid">
+                    <thead><tr>
+                        <th>{{ 'eamm.column.class'|trans }}</th>
+                        <th class="text-end">{{ 'eamm.column.total'|trans }}</th>
+                        <th class="text-end">{{ 'eamm.column.failures'|trans }}</th>
+                        <th class="text-end eamm-col-optional">{{ 'eamm.column.avg_duration'|trans }}</th>
+                    </tr></thead>
+                    <tbody>
+                    {% for row in history_stats.classes %}
+                        <tr>
+                            <td class="eamm-mono"><a href="{{ _self.url(dashboard, controller, 'history', {class: row.message_class, from: since}) }}">{{ row.message_class }}</a></td>
+                            <td class="text-end">{{ row.total|eamm_number }}</td>
+                            <td class="text-end">
+                                {% if row.failures > 0 %}
+                                    <a class="eamm-error" href="{{ _self.url(dashboard, controller, 'history', {class: row.message_class, status: 'failed', from: since}) }}">{{ row.failures|eamm_number }}</a>
+                                {% else %}
+                                    {{ row.failures|eamm_number }}
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap eamm-col-optional">{{ row.avg_ms is null ? '—' : (row.avg_ms|round|eamm_number ~ ' ms') }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% endif %}
     {% endif %}
+
+    <h2 class="eamm-section-title">{{ 'eamm.overview.failed_title'|trans({'%count%': failed_total|eamm_number}) }}</h2>
+    {% include '@EasyAdminMessengerManager/_partials/breakdown.html.twig' with {
+        breakdown: computed.breakdown,
+        total: failed_total,
+        sample_size: computed.sampleSize,
+        limit: constant('EasyAdminMessengerManager\\Component\\OverviewComponent::BREAKDOWN_LIMIT'),
+        see_all_url: _self.url(dashboard, controller, 'failed', {}),
+    } %}
 </div>

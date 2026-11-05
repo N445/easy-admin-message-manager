@@ -1,15 +1,15 @@
 {% trans_default_domain 'EasyAdminMessengerManager' %}
-{% set confirm = "if (!confirm(this.dataset.confirm)) { event.preventDefault(); event.stopImmediatePropagation(); }" %}
 <div {{ attributes }}>
     {% include '@EasyAdminMessengerManager/_partials/notice.html.twig' %}
-    <div class="d-flex gap-2 mb-3">
-        <a class="btn btn-sm btn-secondary" href="{{ computed.listUrl }}">← {{ 'eamm.tab.failed'|trans }}</a>
-        {% if is_granted('EAMM_RETRY') and decodable %}
-            <button type="button" class="btn btn-sm btn-primary" data-confirm="{{ 'eamm.failed.confirm_retry'|trans }}" onclick="{{ confirm }}"
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a class="btn btn-sm btn-secondary" href="{{ computed.listUrl }}">← {{ (returnTo ? 'eamm.show.back' : 'eamm.tab.failed')|trans }}</a>
+        {% set view = computed.view %}
+        {% if decodable and is_granted('EAMM_RETRY', view) %}
+            <button type="button" class="btn btn-sm btn-primary" data-loading="addAttribute(disabled)" data-eamm-confirm="{{ 'eamm.failed.confirm_retry'|trans }}" title="{{ 'eamm.action.retry_help'|trans }}"
                     data-action="live#action" data-live-action-param="retry">{{ 'eamm.action.retry'|trans }}</button>
         {% endif %}
-        {% if is_granted('EAMM_REMOVE') %}
-            <button type="button" class="btn btn-sm btn-danger" data-confirm="{{ 'eamm.failed.confirm_remove'|trans }}" onclick="{{ confirm }}"
+        {% if is_granted('EAMM_REMOVE', view) %}
+            <button type="button" class="btn btn-sm btn-danger" data-loading="addAttribute(disabled)" data-eamm-confirm="{{ 'eamm.failed.confirm_remove'|trans }}"
                     data-action="live#action" data-live-action-param="remove">{{ 'eamm.action.remove'|trans }}</button>
         {% endif %}
     </div>

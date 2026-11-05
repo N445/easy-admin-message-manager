@@ -17,6 +17,7 @@ final readonly class DoctrineFilter
     {
         $this->contains($query, 'eamm_class', $this->filter->messageClass);
         $this->contains($query, 'eamm_exception', $this->filter->exception);
+        $this->contains($query, 'eamm_tracking', $this->filter->trackingId);
         $this->origin($query);
         $this->period($query);
 
@@ -46,12 +47,17 @@ final readonly class DoctrineFilter
     private function period(QueryBuilder $query): void
     {
         if (null !== $this->filter->from) {
-            $query->andWhere('created_at >= :eamm_from')->setParameter('eamm_from', $this->filter->from->format('Y-m-d H:i:s'));
+            $query->andWhere('created_at >= :eamm_from')->setParameter('eamm_from', self::storedDate($this->filter->from));
         }
 
         if (null !== $this->filter->to) {
-            $query->andWhere('created_at <= :eamm_to')->setParameter('eamm_to', $this->filter->to->format('Y-m-d H:i:s'));
+            $query->andWhere('created_at <= :eamm_to')->setParameter('eamm_to', self::storedDate($this->filter->to));
         }
+    }
+
+    private static function storedDate(\DateTimeImmutable $date): string
+    {
+        return $date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
 
     private function matchesEncoded(QueryBuilder $query, string $name, string $inBody, string $inHeaders): void

@@ -1,0 +1,37 @@
+{% trans_default_domain 'EasyAdminMessengerManager' %}
+{% set tones = {handled: 'success', retrying: 'warning', failed: 'danger'} %}
+{% if entries is empty %}
+    <p class="eamm-muted eamm-timeline-empty">{{ 'eamm.timeline.empty'|trans }}</p>
+{% else %}
+    <div class="eamm-table-wrap">
+        <table class="table datagrid eamm-timeline">
+            <thead>
+                <tr>
+                    <th>{{ 'eamm.column.handled_at'|trans }}</th>
+                    <th>{{ 'eamm.column.status'|trans }}</th>
+                    <th class="eamm-col-optional">{{ 'eamm.column.transport'|trans }}</th>
+                    <th class="text-end eamm-col-optional">{{ 'eamm.column.attempt'|trans }}</th>
+                    <th class="text-end">{{ 'eamm.column.duration'|trans }}</th>
+                    <th>{{ 'eamm.column.error'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for entry in entries %}
+                <tr>
+                    <td class="text-nowrap"><a href="{{ ea_url().unsetAll().setController(eamm_controller).setAction('historyEntry').set('entryId', entry.id) }}">{{ entry.handled_at|eamm_datetime }}</a></td>
+                    <td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td>
+                    <td class="eamm-col-optional">{{ entry.transport }}</td>
+                    <td class="text-end eamm-col-optional">{{ entry.attempt|eamm_number }}</td>
+                    <td class="text-end text-nowrap">{{ entry.duration_ms is null ? '—' : entry.duration_ms|eamm_number ~ ' ms' }}</td>
+                    <td>
+                        {% if entry.error_class %}
+                            <div class="eamm-mono">{{ entry.error_class }}</div>
+                            <div class="eamm-muted eamm-clamp" title="{{ entry.error_message }}">{{ entry.error_message }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}

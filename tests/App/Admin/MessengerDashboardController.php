@@ -10,4 +10,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminRoute;
 #[AdminRoute('/messenger', name: 'messenger')]
 final class MessengerDashboardController extends AbstractMessengerDashboardController
 {
+    protected function hiddenTransports(): array
+    {
+        return ['internal'];
+    }
 }

@@ -24,7 +24,7 @@ final class FailedMessagesTest extends MessengerTestCase
     {
         $registry = self::getContainer()->get(TransportRegistry::class);
 
-        self::assertSame(['async', 'failed', 'pending'], $registry->names());
+        self::assertSame(['async', 'failed', 'pending', 'internal'], $registry->names());
         self::assertSame(['failed'], $registry->failureNames());
         self::assertTrue($registry->isListable('failed'));
         self::assertFalse($registry->isListable('async'));
@@ -34,7 +34,7 @@ final class FailedMessagesTest extends MessengerTestCase
     {
         $this->addFailed(new TestMessage('one'));
 
-        $summaries = self::getContainer()->get(QueueOverview::class)->summaries(['async', 'pending']);
+        $summaries = self::getContainer()->get(QueueOverview::class)->summaries(['async', 'pending', 'internal']);
 
         self::assertCount(1, $summaries);
         self::assertSame('failed', $summaries[0]->name);
@@ -125,9 +125,10 @@ final class FailedMessagesTest extends MessengerTestCase
         $this->addFailed(new TestMessage('three'), 'other');
         $matching = $this->failedViews(MessageFilter::fromArray(['origin' => 'async']));
 
-        $count = self::getContainer()->get(BatchDispatcher::class)->dispatch(BatchAction::Requeue, MessageSelection::fromViews($matching));
+        $receipt = self::getContainer()->get(BatchDispatcher::class)->dispatch(BatchAction::Requeue, MessageSelection::fromViews($matching));
 
-        self::assertSame(2, $count);
+        self::assertSame(2, $receipt->count);
+        self::assertFalse($receipt->isQueued());
         self::assertCount(2, $this->async()->getSent());
         self::assertCount(1, $this->failed());
     }

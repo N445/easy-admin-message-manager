@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace EasyAdminMessengerManager\Tests\Integration;
 
+use EasyAdminMessengerManager\History\HistoryEntry;
 use EasyAdminMessengerManager\History\HistoryFilter;
 use EasyAdminMessengerManager\History\HistoryRepository;
 use EasyAdminMessengerManager\History\HistoryStatus;
@@ -70,6 +71,20 @@ final class HistoryTest extends MessengerTestCase
 
         self::assertSame('ko', json_decode((string) $entry['payload'], true)['label']);
         self::assertStringContainsString('TestMessageHandler', (string) $entry['error_trace']);
+    }
+
+    public function testFiltersOnErrorPeriodDurationAndTrackingId(): void
+    {
+        $history = self::getContainer()->get(HistoryRepository::class);
+        $history->insert(new HistoryEntry(TestMessage::class, 'async', HistoryStatus::Failed, 1, 1200, null, new \RuntimeException('Album 12 timed out'), null, 'tracked'));
+        $history->insert(new HistoryEntry(TestMessage::class, 'async', HistoryStatus::Handled, 1, 30, null, null, null, 'other'));
+
+        self::assertSame(1, $history->count(HistoryFilter::fromArray(['exception' => 'timed out'])));
+        self::assertSame(1, $history->count(HistoryFilter::fromArray(['exception' => 'RuntimeException'])));
+        self::assertSame(1, $history->count(HistoryFilter::fromArray(['duration' => '1000'])));
+        self::assertSame(1, $history->count(HistoryFilter::fromArray(['message' => 'tracked'])));
+        self::assertSame(2, $history->count(HistoryFilter::fromArray(['from' => date('Y-m-d\TH:i', time() - 120)])));
+        self::assertSame(0, $history->count(HistoryFilter::fromArray(['to' => date('Y-m-d\TH:i', time() - 120)])));
     }
 
     private function consume(int $limit): void

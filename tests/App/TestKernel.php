@@ -25,6 +25,14 @@ final class TestKernel extends Kernel
 {
     use MicroKernelTrait;
 
+    /**
+     * @param array<string, mixed> $bundleConfig
+     */
+    public function __construct(string $environment = 'test', bool $debug = false, private readonly array $bundleConfig = [])
+    {
+        parent::__construct($environment, $debug);
+    }
+
     public function registerBundles(): iterable
     {
         yield new FrameworkBundle();
@@ -46,7 +54,7 @@ final class TestKernel extends Kernel
 
     public function getCacheDir(): string
     {
-        return sys_get_temp_dir().'/eamm-tests/cache';
+        return sys_get_temp_dir().'/eamm-tests/cache/'.md5(serialize($this->bundleConfig));
     }
 
     public function getLogDir(): string
@@ -66,7 +74,9 @@ final class TestKernel extends Kernel
     {
         $container->services()
             ->defaults()->autowire()->autoconfigure()
-            ->load('EasyAdminMessengerManager\\Tests\\App\\Admin\\', __DIR__.'/Admin/');
+            ->load('EasyAdminMessengerManager\\Tests\\App\\Admin\\', __DIR__.'/Admin/')
+            ->set(TestMessageViewCustomizer::class)
+            ->set(TestSupportVoter::class);
 
         $container->extension('framework', [
             'test' => true,
@@ -82,6 +92,8 @@ final class TestKernel extends Kernel
                     'async' => ['dsn' => 'in-memory://', 'retry_strategy' => ['max_retries' => 0]],
                     'failed' => ['dsn' => 'doctrine://default?queue_name=failed', 'retry_strategy' => ['max_retries' => 0]],
                     'pending' => ['dsn' => 'doctrine://default?queue_name=pending'],
+                    'internal' => ['dsn' => 'doctrine://default?queue_name=internal'],
+                    'sync' => ['dsn' => 'sync://'],
                 ],
                 'routing' => [TestMessage::class => 'async'],
             ],
@@ -101,10 +113,10 @@ final class TestKernel extends Kernel
             'dbal' => ['url' => 'sqlite:///:memory:'],
             'orm' => ['auto_mapping' => false],
         ]);
-        $container->extension('easy_admin_messenger_manager', [
+        $container->extension('easy_admin_messenger_manager', array_replace_recursive([
             'history' => ['enabled' => true, 'capture_payload' => true],
             'permissions' => ['view' => 'ROLE_VIEWER', 'retry' => 'ROLE_ADMIN', 'remove' => 'ROLE_ADMIN'],
-        ]);
+        ], $this->bundleConfig));
     }
 
     protected function configureRoutes(RoutingConfigurator $routes): void
