@@ -15,7 +15,7 @@ use Symfony\Component\Filesystem\Filesystem;
 
 use function Symfony\Component\String\u;
 
-#[AsCommand(name: 'eamm:make:dashboard', description: 'Creates an EasyAdmin controller managing Symfony Messenger messages')]
+#[AsCommand(name: 'make:eamm:dashboard', description: 'Creates an EasyAdmin controller managing Symfony Messenger messages')]
 final class MakeDashboardCommand extends Command
 {
     private const string SKELETON = __DIR__.'/../Resources/skeleton/messenger_dashboard_controller.tpl';

@@ -7,7 +7,7 @@
     },
     "post-install-output": [
         "  * Generate the dashboard controller:",
-        "    <fg=blue>php bin/console eamm:make:dashboard</>",
+        "    <fg=blue>php bin/console make:eamm:dashboard</>",
         "",
         "  * Add it to <fg=green>DashboardController::configureMenuItems()</>:",
         "    <fg=blue>yield MenuItem::linkTo(MessengerDashboardController::class, 'Messenger', 'fa fa-envelope')->setAction('overview');</>",
@@ -15,6 +15,6 @@
         "  * Make sure the Stimulus <fg=green>live</> controller is loaded on admin pages",
         "",
         "  * Optional history: set <fg=green>history.enabled: true</> in <fg=green>config/packages/easy_admin_messenger_manager.yaml</>,",
-        "    then run <fg=blue>php bin/console doctrine:migrations:diff</> (or <fg=blue>eamm:history:setup</> without migrations)"
+        "    then run <fg=blue>php bin/console doctrine:migrations:migrate</> (or <fg=blue>eamm:history:setup</> without migrations)"
     ]
 }

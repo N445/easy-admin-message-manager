@@ -26,7 +26,7 @@ final class MakeDashboardCommandTest extends TestCase
 
     public function testIsNamespacedUnderEamm(): void
     {
-        self::assertSame('eamm:make:dashboard', (new MakeDashboardCommand($this->projectDir))->getName());
+        self::assertSame('make:eamm:dashboard', (new MakeDashboardCommand($this->projectDir))->getName());
     }
 
     public function testGeneratesTheControllerWithDefaults(): void

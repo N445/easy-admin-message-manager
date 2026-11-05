@@ -57,7 +57,7 @@ To work on the bundle next to your application, use a path repository instead (w
 ### 2. Generate the dashboard controller
 
 ```bash
-php bin/console eamm:make:dashboard
+php bin/console make:eamm:dashboard
 ```
 
 It creates `src/Controller/Admin/MessengerDashboardController.php`:
@@ -69,7 +69,7 @@ final class MessengerDashboardController extends AbstractMessengerDashboardContr
 }
 ```
 
-Options: `eamm:make:dashboard Queues --dir=src/Admin --route=queues`. Pick another `--route` if `/admin/messenger` is already taken (by zenstruck/messenger-monitor-bundle for example).
+Options: `make:eamm:dashboard Queues --dir=src/Admin --route=queues`. Pick another `--route` if `/admin/messenger` is already taken (by zenstruck/messenger-monitor-bundle for example).
 
 Then add it to the menu in your `DashboardController::configureMenuItems()`:
 
@@ -179,7 +179,7 @@ Transports using the `sync://` DSN are never shown. Hide others with `hiddenTran
 
 | Command | Options |
 |---|---|
-| `eamm:make:dashboard [class]` | `--dir`, `--route` |
+| `make:eamm:dashboard [class]` | `--dir`, `--route` |
 | `eamm:history:setup` | `--dump-sql` |
 | `eamm:failed:purge` | `--older-than=<days>`, `--class`, `--exception`, `--origin`, `--transport`, `--dry-run`, `--force` |
 | `eamm:history:purge` | `--older-than=<days>`, `--status=handled\|retrying\|failed`, `--class`, `--transport`, `--dry-run` |
