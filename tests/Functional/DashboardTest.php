@@ -219,6 +219,27 @@ final class DashboardTest extends WebTestCase
         self::assertSame(['failed', 'pending'], $crawler->filter('.eamm-pill')->each(static fn ($node): string => trim((string) preg_replace('/\s+\S+$/', '', $node->text()))));
     }
 
+    public function testLiveRerendersBuildLinksForTheRightDashboard(): void
+    {
+        self::getContainer()->get(\EasyAdminMessengerManager\History\HistoryRepository::class)->insert(new \EasyAdminMessengerManager\History\HistoryEntry(
+            TestMessage::class, 'async', \EasyAdminMessengerManager\History\HistoryStatus::Handled, 1, 5, null, null, null,
+        ));
+        self::getContainer()->get('messenger.transport.pending')->send(new Envelope(new TestMessage('pending')));
+
+        $history = (string) $this->createLiveComponent('EAMM:History', [
+            'controller' => MessengerDashboardController::class,
+            'dashboard' => TestDashboardController::class,
+        ], $this->client)->actingAs($this->admin())->refresh()->render();
+        $messages = (string) $this->createLiveComponent('EAMM:Messages', [
+            'controller' => MessengerDashboardController::class,
+            'dashboard' => TestDashboardController::class,
+            'transport' => 'pending',
+        ], $this->client)->actingAs($this->admin())->refresh()->render();
+
+        self::assertSame(2, substr_count($history, '/admin/messenger/history/'));
+        self::assertSame(2, substr_count($messages, '/admin/messenger/messages/pending/'));
+    }
+
     public function testHistoryPageRenders(): void
     {
         $this->client->request('GET', '/admin/messenger/history');

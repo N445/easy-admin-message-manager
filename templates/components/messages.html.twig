@@ -69,7 +69,7 @@
                 </thead>
                 <tbody>
                 {% for view in views %}
-                    {% set view_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id).set('returnTo', return_to) %}
+                    {% set view_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('message').set('transport', view.transport).set('messageId', view.id).set('returnTo', return_to).generateUrl() %}
                     {% set label = eamm_label(view) %}
                     {% set name = label ~ ' #' ~ view.id %}
                     <tr>

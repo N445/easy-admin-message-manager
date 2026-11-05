@@ -73,7 +73,7 @@
             </thead>
             <tbody>
             {% for entry in entries %}
-                {% set entry_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('historyEntry').set('entryId', entry.id).set('returnTo', return_to) %}
+                {% set entry_url = ea_url().unsetAll().setDashboard(dashboard).setController(controller).setAction('historyEntry').set('entryId', entry.id).set('returnTo', return_to).generateUrl() %}
                 <tr>
                     <td class="text-nowrap"><a href="{{ entry_url }}">{{ entry.handled_at|eamm_datetime }}</a></td>
                     <td><span class="badge badge-{{ tones[entry.status] ?? 'secondary' }}">{{ ('eamm.status.' ~ entry.status)|trans }}</span></td>
