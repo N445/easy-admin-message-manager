@@ -20,8 +20,8 @@
         "symfony/string": "^7.4 || ^8.0",
         "symfony/twig-bundle": "^7.4 || ^8.0",
         "symfony/uid": "^7.4 || ^8.0",
-        "symfony/ux-live-component": "^2.30",
-        "symfony/ux-twig-component": "^2.30"
+        "symfony/ux-live-component": "^2.30 || ^3.0",
+        "symfony/ux-twig-component": "^2.30 || ^3.0"
     },
     "require-dev": {
         "doctrine/orm": "^3.6.8",
