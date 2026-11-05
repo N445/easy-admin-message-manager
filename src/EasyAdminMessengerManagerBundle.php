@@ -25,6 +25,17 @@ final class EasyAdminMessengerManagerBundle extends AbstractBundle
         $container->addCompilerPass(new TransportLocatorPass());
     }
 
+    public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
+    {
+        if (!$builder->hasExtension('doctrine_migrations') || !$this->isHistoryEnabled($builder)) {
+            return;
+        }
+
+        $builder->prependExtensionConfig('doctrine_migrations', [
+            'migrations_paths' => ['EasyAdminMessengerManager\\Migrations' => \dirname(__DIR__).'/migrations'],
+        ]);
+    }
+
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $container->parameters()
@@ -48,5 +59,12 @@ final class EasyAdminMessengerManagerBundle extends AbstractBundle
 
         $builder->setAlias('easy_admin_messenger_manager.history_connection', \sprintf('doctrine.dbal.%s_connection', $config['history']['connection']));
         $container->import('../config/history.php');
+    }
+
+    private function isHistoryEnabled(ContainerBuilder $builder): bool
+    {
+        $configs = $builder->getExtensionConfig($this->extensionAlias);
+
+        return true === ($builder->resolveEnvPlaceholders(array_replace_recursive([], ...$configs), true)['history']['enabled'] ?? false);
     }
 }

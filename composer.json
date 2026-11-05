@@ -38,6 +38,7 @@
         "doctrine/orm": "<3.6.8"
     },
     "suggest": {
+        "doctrine/doctrine-migrations-bundle": "Runs the history table migration shipped by the bundle",
         "doctrine/orm": "Adds the history table to the schema compared by doctrine:schema:update and doctrine:migrations:diff",
         "symfony/doctrine-messenger": "Doctrine failure transport, listable from the dashboard",
         "symfony/redis-messenger": "Redis transports are listable since Symfony 8.1"

@@ -119,12 +119,13 @@ easy_admin_messenger_manager:
             - App\Message\HighVolumeMessage
 ```
 
-The bundle adds the `eamm_message_history` table to the Doctrine schema of the history connection (no entity involved). With Doctrine migrations:
+The bundle ships its own migration (like other bundles providing tables): with DoctrineMigrationsBundle installed it is registered automatically under the `EasyAdminMessengerManager\Migrations` namespace, nothing is generated in your project.
 
 ```bash
-php bin/console doctrine:migrations:diff
 php bin/console doctrine:migrations:migrate
 ```
+
+The table is also declared in the Doctrine schema of the history connection, so `doctrine:migrations:diff` neither recreates nor drops it.
 
 Without migrations, create it directly (`--dump-sql` prints the SQL instead):
 
@@ -285,7 +286,8 @@ Batch actions (selection, every matching message) and `EAMM_VIEW` are checked wi
 
 - **Buttons and filters do nothing**: the Stimulus `live` controller is not loaded on admin pages (step 3); the dashboard shows a warning banner in that case.
 - **The JSON viewer stays empty, or a banner asks for `assets:install`**: run `php bin/console assets:install public` (again after each update of the bundle).
-- **`doctrine:migrations:diff` does not create the history table**: check that `history.enabled` is true and that `history.connection` is the connection of the entity manager used by the migrations; with a `schema_filter`, the table name must match it.
+- **The EAMM migration is not listed by `doctrine:migrations:status`**: `history.enabled` must be true and DoctrineMigrationsBundle installed; the migration runs on the connection used by your migrations, which must be `history.connection`.
+- **`doctrine:migrations:diff` wants to drop `eamm_message_history`**: `history.connection` is not the connection being diffed, or a `schema_filter` excludes the table.
 - **"route already exists"**: another bundle uses the same admin path, regenerate the controller with `--route`.
 
 ## Good to know
