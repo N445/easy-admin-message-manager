@@ -1,5 +1,5 @@
 {
-    "name": "robin/easy-admin-messenger-manager",
+    "name": "n445/easy-admin-messenger-manager",
     "description": "Symfony Messenger manager for EasyAdmin: queues overview, failed messages, single and batch retry, optional history.",
     "type": "symfony-bundle",
     "license": "MIT",

@@ -26,7 +26,7 @@ Manage Symfony Messenger from EasyAdmin: queue overview, every pending or failed
 ### 1. Install the package
 
 ```bash
-composer require robin/easy-admin-messenger-manager
+composer require n445/easy-admin-messenger-manager
 ```
 
 With Symfony Flex, the recipe registers the bundle, creates `config/packages/easy_admin_messenger_manager.yaml` and `composer install` publishes the assets. Without Flex, add the bundle to `config/bundles.php` and run `php bin/console assets:install public`:
@@ -42,7 +42,7 @@ Until the package is published on Packagist, declare the GitHub repository first
 
 ```json
 "repositories": [
-    { "type": "vcs", "url": "https://github.com/robin/easy-admin-messenger-manager" }
+    { "type": "vcs", "url": "https://github.com/n445/easy-admin-messenger-manager" }
 ]
 ```
 
@@ -300,7 +300,7 @@ Batch actions (selection, every matching message) and `EAMM_VIEW` are checked wi
 
 ## Flex recipe
 
-The `recipe/` folder holds the Symfony Flex recipe (bundle registration, commented configuration, post-install instructions). Once the package is on Packagist, it is submitted to [symfony/recipes-contrib](https://github.com/symfony/recipes-contrib) as `robin/easy-admin-messenger-manager/1.0/`; until then, register the bundle and create the configuration by hand (step 1).
+The `recipe/` folder holds the Symfony Flex recipe (bundle registration, commented configuration, post-install instructions). Once the package is on Packagist, it is submitted to [symfony/recipes-contrib](https://github.com/symfony/recipes-contrib) as `n445/easy-admin-messenger-manager/1.0/`; until then, register the bundle and create the configuration by hand (step 1).
 
 ## Development
 
